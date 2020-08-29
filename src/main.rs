@@ -12,7 +12,7 @@ mod gl_utils;
 
 use gl_utils::{
     triangle::Triangle,
-    bindable::Bindable, shaders::program::ProgramBuilder, camera::CameraBuilder
+    bindable::Bindable, shaders::program::ProgramBuilder, camera::{VecDir, CameraBuilder}
 };
 
 use glutin::event::{Event, WindowEvent, KeyboardInput, ElementState::{Pressed, Released}, VirtualKeyCode::{self, *}};
@@ -119,14 +119,12 @@ fn main() {
             if let Ok(keys) = pressed_keys.lock() {
                 for key in keys.iter() {
                     match key {
-                        VirtualKeyCode::W => camera.forward(delta_time, &program),
-                        VirtualKeyCode::S => camera.backwards(delta_time, &program),
-                        VirtualKeyCode::A => {
-                            _arbitrary_number += delta_time;
-                        },
-                        VirtualKeyCode::D => {
-                            _arbitrary_number -= delta_time;
-                        },
+                        VirtualKeyCode::W => camera.move_in_dir(VecDir::Forward, delta_time, &program),
+                        VirtualKeyCode::S => camera.move_in_dir(VecDir::Backward, delta_time, &program),
+                        VirtualKeyCode::A => camera.move_in_dir(VecDir::Left, delta_time, &program),
+                        VirtualKeyCode::D => camera.move_in_dir(VecDir::Right, delta_time, &program),
+                        VirtualKeyCode::Space => camera.move_in_dir(VecDir::Up, delta_time, &program),
+                        VirtualKeyCode::LControl => camera.move_in_dir(VecDir::Down, delta_time, &program),
                         _ => { }
                     }
                 }

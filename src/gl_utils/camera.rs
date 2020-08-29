@@ -1,6 +1,16 @@
 use crate::gl_utils::shaders::program::Program;
 use glm;
 
+// Move this
+pub enum VecDir {
+    Forward,
+    Left,
+    Backward,
+    Right,
+    Up,
+    Down
+}
+
 pub struct Camera {
     projection: glm::Mat4x4,
     transform: glm::Mat4x4,
@@ -15,46 +25,28 @@ impl Camera {
         }
     }
 
-    pub fn forward(&mut self, delta_time: f32, program: &Program) {
+    pub fn move_in_dir(&mut self, direction: VecDir, delta_time: f32, program: &Program) {
+        let (indices, dir): ([usize; 3], f32) = match direction {
+            VecDir::Forward => ([8, 9, 10], 1.0),
+            VecDir::Backward => ([8, 9, 10], -1.0),
+            VecDir::Left => ([0, 1, 3], 1.0),
+            VecDir::Right => ([0, 1, 3], -1.0),
+            VecDir::Up => ([4, 5, 6], -1.0),
+            VecDir::Down => ([4, 5, 6], 1.0),
+        };
+        
+        let modifier = self.move_speed * delta_time * dir;
+
         self.transform = glm::translate(
             &self.transform, 
             &glm::vec3(
-                self.transform[8] * delta_time,
-                self.transform[9] * delta_time,
-                self.transform[10] * delta_time
+                self.transform[indices[0]] * modifier,
+                self.transform[indices[1]] * modifier,
+                self.transform[indices[2]] * modifier
             )
         );
 
         self.assign_camera_uniform(program);
-    }
-
-    pub fn backwards(&mut self, delta_time: f32, program: &Program) {
-        self.transform = glm::translate(
-            &self.transform, 
-            &glm::vec3(
-                self.transform[8] * -1.0 * delta_time,
-                self.transform[9] * -1.0 * delta_time,
-                self.transform[10] * -1.0 * delta_time
-            )
-        );
-
-        self.assign_camera_uniform(program);
-    }
-
-    pub fn right_strafe(&mut self, delta_time: f32, program: &Program) {
-        todo!();
-    }
-
-    pub fn left_strafe(&mut self, delta_time: f32, program: &Program) {
-        todo!();
-    }
-
-    pub fn upwards(&mut self, delta_time: f32, program: &Program) {
-        todo!();
-    }
-
-    pub fn downwards(&mut self, delta_time: f32, program: &Program) {
-        todo!();
     }
 }   
 
