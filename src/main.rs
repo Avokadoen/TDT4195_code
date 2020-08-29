@@ -12,7 +12,7 @@ mod gl_utils;
 
 use gl_utils::{
     triangle::Triangle,
-    bindable::Bindable, shaders::program::ProgramBuilder
+    bindable::Bindable, shaders::program::ProgramBuilder, camera::CameraBuilder
 };
 
 use glutin::event::{Event, WindowEvent, KeyboardInput, ElementState::{Pressed, Released}, VirtualKeyCode::{self, *}};
@@ -97,35 +97,11 @@ fn main() {
             return;
         };
 
-        if let Err(e) = program.locate_uniform("c_trans") {
-            eprint!("Failed to find c_trans, probably loading wrong shader. err: {}", e);
-            return;
-        };
-
-        let mut c_trans = glm::identity::<f32, glm::U4>();
-        c_trans = glm::translate(&c_trans, &glm::vec3(0.0, 0.0, -2.0));
-
-        if let Err(e) = program.set_uniform_matrix("c_trans", c_trans.as_ptr(), gl::UniformMatrix4fv) {
-            eprintln!("{}", e);
-        };
-
-        println!("{}", c_trans);
-
-        if let Err(e) = program.locate_uniform("projection") {
-            eprint!("Failed to find projection, probably loading wrong shader. err: {}", e);
-            return;
-        };
-
-        let projection = glm::perspective::<f32>(
-            SCREEN_W as f32 / SCREEN_H as f32, 
-            1.4, 
-            0.1, 
-            40.0
-        );
-
-        if let Err(e) = program.set_uniform_matrix("projection", projection.as_ptr(), gl::UniformMatrix4fv) {
-            eprintln!("{}", e);
-        };
+        let camera = CameraBuilder::init()
+            .projection(SCREEN_W as f32 / SCREEN_H as f32, 1.4, 0.1, 40.0)
+            .transform(&glm::vec3(0.0, 0.0, -2.0))
+            .move_speed(2.0)
+            .build_and_attach_to_program(&mut program);
 
         // Used to demonstrate keyboard handling -- feel free to remove
         let mut _arbitrary_number = 0.0;
