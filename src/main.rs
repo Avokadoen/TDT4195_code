@@ -97,7 +97,7 @@ fn main() {
             return;
         };
 
-        let camera = CameraBuilder::init()
+        let mut camera = CameraBuilder::init()
             .projection(SCREEN_W as f32 / SCREEN_H as f32, 1.4, 0.1, 40.0)
             .transform(&glm::vec3(0.0, 0.0, -2.0))
             .move_speed(2.0)
@@ -119,6 +119,8 @@ fn main() {
             if let Ok(keys) = pressed_keys.lock() {
                 for key in keys.iter() {
                     match key {
+                        VirtualKeyCode::W => camera.forward(delta_time, &program),
+                        VirtualKeyCode::S => camera.backwards(delta_time, &program),
                         VirtualKeyCode::A => {
                             _arbitrary_number += delta_time;
                         },
