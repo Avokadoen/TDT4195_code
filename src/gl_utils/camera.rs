@@ -27,12 +27,12 @@ impl Camera {
 
     pub fn move_in_dir(&mut self, direction: VecDir, delta_time: f32, program: &Program) {
         let (indices, dir): ([usize; 3], f32) = match direction {
-            VecDir::Forward => ([8, 9, 10], 1.0),
-            VecDir::Backward => ([8, 9, 10], -1.0),
-            VecDir::Left => ([0, 1, 3], 1.0),
-            VecDir::Right => ([0, 1, 3], -1.0),
-            VecDir::Up => ([4, 5, 6], -1.0),
-            VecDir::Down => ([4, 5, 6], 1.0),
+            VecDir::Forward     => ([8, 9, 10],  1.0),
+            VecDir::Backward    => ([8, 9, 10], -1.0),
+            VecDir::Left        => ([0, 1,  3],  1.0),
+            VecDir::Right       => ([0, 1,  3], -1.0),
+            VecDir::Up          => ([4, 5,  6], -1.0),
+            VecDir::Down        => ([4, 5,  6],  1.0),
         };
         
         let modifier = self.move_speed * delta_time * dir;

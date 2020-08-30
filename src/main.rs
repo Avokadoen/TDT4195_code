@@ -1,6 +1,7 @@
 extern crate nalgebra_glm as glm;
 extern crate gl;
 
+use glutin::window::Fullscreen::{self, Exclusive};
 use std::{
     ptr,
 };
@@ -15,11 +16,8 @@ use gl_utils::{
     bindable::Bindable, shaders::program::ProgramBuilder, camera::{VecDir, CameraBuilder}
 };
 
-use glutin::event::{Event, WindowEvent, KeyboardInput, ElementState::{Pressed, Released}, VirtualKeyCode::{self, *}};
+use glutin::event::{Event, WindowEvent, KeyboardInput, ElementState::{Pressed, Released}, VirtualKeyCode::{self, *}, DeviceEvent};
 use glutin::event_loop::ControlFlow;
-
-const SCREEN_W: u32 = 800;
-const SCREEN_H: u32 = 600;
 
 // Using Triangle abstraction (See gl_utils::triangle)
 
@@ -29,9 +27,13 @@ fn main() {
     let wb = glutin::window::WindowBuilder::new()
         .with_title("Gloom-rs")
         .with_resizable(false)
-        .with_inner_size(glutin::dpi::LogicalSize::new(SCREEN_W, SCREEN_H));
+        .with_maximized(false)
+        .with_always_on_top(true);
+        // .with_fullscreen(Some(Fullscreen::Borderless(el.primary_monitor())));
+
     let cb = glutin::ContextBuilder::new()
         .with_vsync(true);
+
     let windowed_context = cb.build_windowed(wb, &el).unwrap();
     
     // Set up a shared vector for keeping track of currently pressed keys
@@ -41,6 +43,10 @@ fn main() {
 
     // Spawn a separate thread for rendering, so event handling doesn't block rendering
     let render_thread = thread::spawn(move || {
+        let sf = windowed_context.window().scale_factor();
+        let screen_dimensions = windowed_context.window().inner_size().to_logical::<f32>(sf);
+
+
         // Acquire the OpenGL Context and load the function pointers. This has to be done inside of the renderin thread, because
         // an active OpenGL context cannot safely traverse a thread boundary
         let context = unsafe {
@@ -98,7 +104,7 @@ fn main() {
         };
 
         let mut camera = CameraBuilder::init()
-            .projection(SCREEN_W as f32 / SCREEN_H as f32, 1.4, 0.1, 40.0)
+            .projection(screen_dimensions.width / screen_dimensions.height, 1.4, 0.1, 40.0)
             .transform(&glm::vec3(0.0, 0.0, -2.0))
             .move_speed(2.0)
             .build_and_attach_to_program(&mut program);
