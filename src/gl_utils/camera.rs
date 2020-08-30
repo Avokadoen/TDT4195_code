@@ -14,12 +14,14 @@ pub enum VecDir {
 pub struct Camera {
     projection: glm::Mat4x4,
     transform: glm::Mat4x4,
-    move_speed: f32
+    orientation: glm::Quat,
+    move_speed: f32,
+    turn_sensitivity: f32,
 }
 
 impl Camera {
     fn assign_camera_uniform(&self, program: &Program) {
-        let camera_transform = self.projection * self.transform;
+        let camera_transform = self.projection * glm::quat_to_mat4(&self.orientation) * self.transform;
         if let Err(e) = program.set_uniform_matrix("camera", camera_transform.as_ptr(), gl::UniformMatrix4fv) {
             eprintln!("Error occured in camera::forward, e: {}", e);
         }
@@ -46,14 +48,25 @@ impl Camera {
             )
         );
 
-        self.assign_camera_uniform(program);
+        self.assign_camera_uniform(&program);
+    }
+
+    pub fn turn(&mut self, turn_vector: (f64, f64), delta_time: f32, program: &Program) {
+        let turn_vector = glm::vec3::<f32>(turn_vector.1 as f32, turn_vector.0 as f32, 0.0);
+        let angle = glm::magnitude(&turn_vector) * delta_time * self.turn_sensitivity;
+        let up = glm::normalize(&turn_vector);
+
+        self.orientation = glm::quat_rotate(&self.orientation, angle, &up);
+        self.assign_camera_uniform(&program);
     }
 }   
 
 pub struct CameraBuilder {
     projection: Option<glm::Mat4x4>,
     transform: Option<glm::Mat4x4>,
-    move_speed: Option<f32>
+    orientation: Option<glm::Quat>,
+    move_speed: Option<f32>,
+    turn_sensitivity: Option<f32>
 }
 
 impl CameraBuilder {
@@ -61,7 +74,9 @@ impl CameraBuilder {
         Self {
             projection: None,
             transform: None,
-            move_speed: None
+            orientation: None,
+            move_speed: None,
+            turn_sensitivity: None
         }
     }
 
@@ -82,8 +97,21 @@ impl CameraBuilder {
         self
     }
 
+    pub fn orientation(mut self, orientation: glm::Quat) -> Self {
+        self.orientation = Some(orientation);
+        
+        self
+    }
+
+
     pub fn move_speed(mut self, move_speed: f32) -> Self {
         self.move_speed = Some(move_speed);
+
+        self
+    }
+
+    pub fn turn_sensitivity(mut self, turn_sensitivity: f32) -> Self {
+        self.turn_sensitivity = Some(turn_sensitivity);
 
         self
     }
@@ -91,16 +119,33 @@ impl CameraBuilder {
     // TODO: Return Result<Camera, CustomError> 
     pub fn build_and_attach_to_program(self, program: &mut Program) -> Camera {
         let projection = self.projection.expect("CameraBuiler has no projection");
-        let transform = self.transform.expect("CameraBuiler has no transform");
+
+        let transform = self.transform.unwrap_or_else(|| {
+            println!("Default transform for CameraBuilder not supplied, using default");
+            glm::identity()
+        });
+
+        let orientation = self.orientation.unwrap_or_else(|| {
+            println!("Default orientation for CameraBuilder not supplied, using default");
+            glm::quat_identity()
+        });
+
         let move_speed: f32 = self.move_speed.unwrap_or_else(|| {
             println!("Default move_speed for CameraBuilder not supplied, using default");
+            1.0
+        });
+
+        let turn_sensitivity: f32 = self.turn_sensitivity.unwrap_or_else(|| {
+            println!("Default turn_sensitivity for CameraBuilder not supplied, using default");
             1.0
         });
 
         let camera = Camera {
             projection,
             transform,
-            move_speed
+            orientation,
+            move_speed,
+            turn_sensitivity
         };
 
         if let Err(e) = program.locate_uniform("camera") {

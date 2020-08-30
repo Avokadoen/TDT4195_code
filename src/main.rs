@@ -26,7 +26,7 @@ use glutin::event::{
     DeviceEvent
 };
 
-use glutin::event_loop::ControlFlow;
+use glutin::{window::Fullscreen, event_loop::ControlFlow};
 
 enum InputEvent {
     Key(KeyboardInput),
@@ -119,6 +119,7 @@ fn main() {
             .projection(screen_dimensions.width / screen_dimensions.height, 1.4, 0.1, 40.0)
             .transform(&glm::vec3(0.0, 0.0, -2.0))
             .move_speed(2.0)
+            .turn_sensitivity(0.2)
             .build_and_attach_to_program(&mut program);
 
         // Used to demonstrate keyboard handling -- feel free to remove
@@ -127,7 +128,6 @@ fn main() {
         let first_frame_time = std::time::Instant::now();
         let mut last_frame_time = first_frame_time;
 
-        // Set up a shared vector for keeping track of currently pressed keys
         // TODO: Virtual input abstraction for runtime settings
         let mut pressed_keys = Vec::<VirtualKeyCode>::with_capacity(10);
 
@@ -159,7 +159,9 @@ fn main() {
                             }
                         }
                     }
-                    InputEvent::Mouse(_) => {}
+                    InputEvent::Mouse(mouse_input) => {
+                        camera.turn(mouse_input, delta_time, &program);
+                    }
                 }
             });
 
@@ -246,7 +248,9 @@ fn main() {
             }
             Event::DeviceEvent { event, .. } => match event {
                 DeviceEvent::MouseMotion {delta} => {
-                    // println!("deltaX: {}, deltaY: {}", delta.0, delta.1);
+                    if let Err(e) = tx.send(InputEvent::Mouse(delta)) {
+                        eprintln!("Seems reciever has died, e: {}", e);
+                    }
                 },
                 _ => { }
             }
