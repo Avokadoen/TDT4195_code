@@ -186,37 +186,45 @@ fn main() {
         }
 
         match event {
-            Event::WindowEvent { event: WindowEvent::CloseRequested, .. } => {
-                *control_flow = ControlFlow::Exit;
-            },
-            // Keep track of currently pressed keys to send to the rendering thread
-            Event::WindowEvent { event: WindowEvent::KeyboardInput {
-                input: KeyboardInput { state: key_state, virtual_keycode: Some(keycode), .. }, .. }, .. } => {
-
-                if let Ok(mut keys) = arc_pressed_keys.lock() {
-                    match key_state {
-                        Released => {
-                            if keys.contains(&keycode) {
-                                let i = keys.iter().position(|&k| k == keycode).unwrap();
-                                keys.remove(i);
+            Event::WindowEvent { event, .. } => match event {
+                WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
+                // TODO:
+                // WindowEvent::Resized(physical_size) => {
+                    // windowed_context.resize(physical_size);
+                // }
+                // Keep track of currently pressed keys to send to the rendering thread
+                WindowEvent::KeyboardInput { input, ..} => {
+                    // TODO: early return
+                    if let Ok(mut keys) = arc_pressed_keys.lock() {
+                        if let Some(keycode) = input.virtual_keycode {
+                            match input.state {
+                                Released => {
+                                    if keys.contains(&keycode) {
+                                        let i = keys.iter().position(|&k| k == keycode).unwrap();
+                                        keys.remove(i);
+                                    }
+                                },
+                                Pressed => {
+                                    if !keys.contains(&keycode) {
+                                        keys.push(keycode);
+                                    }
+                                }
                             }
-                        },
-                        Pressed => {
-                            if !keys.contains(&keycode) {
-                                keys.push(keycode);
+                            // Handle escape separately
+                            if let Escape = keycode {
+                                *control_flow = ControlFlow::Exit;
                             }
-                        }
+                        }   
                     }
-                }
-
-                // Handle escape separately
-                match keycode {
-                    Escape => {
-                        *control_flow = ControlFlow::Exit;
-                    },
-                    _ => { }
-                }
-            },
+                },
+                _ => (),
+            }
+            Event::DeviceEvent { event, .. } => match event {
+                DeviceEvent::MouseMotion {delta} => {
+                    println!("delta0: {}, delta1: {}", delta.0, delta.1);
+                },
+                _ => { }
+            }
             _ => { }
         }
     });
