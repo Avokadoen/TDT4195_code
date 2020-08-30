@@ -1,25 +1,37 @@
 extern crate nalgebra_glm as glm;
 extern crate gl;
 
-use glutin::window::Fullscreen::{self, Exclusive};
+use glutin::event::KeyboardInput;
 use std::{
     ptr,
 };
 use std::thread;
-use std::sync::{Mutex, Arc, RwLock};
+use std::sync::{Mutex, Arc, RwLock, mpsc};
 
 mod util;
 mod gl_utils;
 
 use gl_utils::{
     triangle::Triangle,
-    bindable::Bindable, shaders::program::ProgramBuilder, camera::{VecDir, CameraBuilder}
+    bindable::Bindable, 
+    shaders::program::ProgramBuilder, 
+    camera::{VecDir, CameraBuilder}
 };
 
-use glutin::event::{Event, WindowEvent, KeyboardInput, ElementState::{Pressed, Released}, VirtualKeyCode::{self, *}, DeviceEvent};
+use glutin::event::{
+    Event, 
+    WindowEvent, 
+    ElementState::{Pressed, Released}, 
+    VirtualKeyCode::{self, *}, 
+    DeviceEvent
+};
+
 use glutin::event_loop::ControlFlow;
 
-// Using Triangle abstraction (See gl_utils::triangle)
+enum InputEvent {
+    Key(KeyboardInput),
+    Mouse((f64, f64))
+}
 
 fn main() {
     // Set up the necessary objects to deal with windows and event handling
@@ -35,11 +47,12 @@ fn main() {
         .with_vsync(true);
 
     let windowed_context = cb.build_windowed(wb, &el).unwrap();
-    
-    // Set up a shared vector for keeping track of currently pressed keys
-    let arc_pressed_keys = Arc::new(Mutex::new(Vec::<VirtualKeyCode>::with_capacity(10)));
-    // Send a copy of this vector to send to the render thread
-    let pressed_keys = Arc::clone(&arc_pressed_keys);
+    if let Err(e) = windowed_context.window().set_cursor_grab(true) {
+        panic!("Error grabbing mouse, e: {}", e);
+    }
+    windowed_context.window().set_cursor_visible(false);
+  
+    let (tx, rx) = mpsc::channel::<InputEvent>();
 
     // Spawn a separate thread for rendering, so event handling doesn't block rendering
     let render_thread = thread::spawn(move || {
@@ -65,8 +78,7 @@ fn main() {
             gl::DebugMessageCallback(Some(util::debug_callback), ptr::null());
         }
 
-        // == // Set up your VAO here
-        // opengl goes from -1 to 1
+        // Debug triangles
         let mut pos: f32 = -1.0;
         let stride: f32 = 2.0 / 5.0;
         let mut vertices = Vec::<f32>::new();
@@ -114,6 +126,11 @@ fn main() {
 
         let first_frame_time = std::time::Instant::now();
         let mut last_frame_time = first_frame_time;
+
+        // Set up a shared vector for keeping track of currently pressed keys
+        // TODO: Virtual input abstraction for runtime settings
+        let mut pressed_keys = Vec::<VirtualKeyCode>::with_capacity(10);
+
         // The main rendering loop
         loop {
             let now = std::time::Instant::now();
@@ -121,20 +138,43 @@ fn main() {
             let delta_time = now.duration_since(last_frame_time).as_secs_f32();
             last_frame_time = now;
 
-            // Handle keyboard input
-            if let Ok(keys) = pressed_keys.lock() {
-                for key in keys.iter() {
-                    match key {
-                        VirtualKeyCode::W => camera.move_in_dir(VecDir::Forward, delta_time, &program),
-                        VirtualKeyCode::S => camera.move_in_dir(VecDir::Backward, delta_time, &program),
-                        VirtualKeyCode::A => camera.move_in_dir(VecDir::Left, delta_time, &program),
-                        VirtualKeyCode::D => camera.move_in_dir(VecDir::Right, delta_time, &program),
-                        VirtualKeyCode::Space => camera.move_in_dir(VecDir::Up, delta_time, &program),
-                        VirtualKeyCode::LControl => camera.move_in_dir(VecDir::Down, delta_time, &program),
-                        _ => { }
+            // Handle changes in keyboard state
+            rx.try_iter().for_each(|input_event| {
+                match input_event {
+                    InputEvent::Key(key_input) => {
+                        match key_input.state {
+                            Pressed => {
+                                if let Some(code) = key_input.virtual_keycode {
+                                    if let None = pressed_keys.iter().position(|x| *x == code) {
+                                        pressed_keys.push(code);
+                                    }
+                                }
+                            }
+                            Released => {
+                                if let Some(code) = key_input.virtual_keycode {
+                                    if let Some(i) = pressed_keys.iter().position(|x| *x == code) {
+                                        pressed_keys.swap_remove(i);
+                                    }
+                                }
+                            }
+                        }
                     }
+                    InputEvent::Mouse(_) => {}
                 }
-            }
+            });
+
+            // Handle keyboard input
+            pressed_keys.iter().for_each(|key| {
+                match key {
+                    VirtualKeyCode::W => camera.move_in_dir(VecDir::Forward, delta_time, &program),
+                    VirtualKeyCode::S => camera.move_in_dir(VecDir::Backward, delta_time, &program),
+                    VirtualKeyCode::A => camera.move_in_dir(VecDir::Left, delta_time, &program),
+                    VirtualKeyCode::D => camera.move_in_dir(VecDir::Right, delta_time, &program),
+                    VirtualKeyCode::Space => camera.move_in_dir(VecDir::Up, delta_time, &program),
+                    VirtualKeyCode::LControl => camera.move_in_dir(VecDir::Down, delta_time, &program),
+                    _ => { }
+                }
+            });
 
             unsafe {
                 gl::ClearColor(0.163, 0.163, 0.163, 1.0);
@@ -192,36 +232,21 @@ fn main() {
                 // WindowEvent::Resized(physical_size) => {
                     // windowed_context.resize(physical_size);
                 // }
-                // Keep track of currently pressed keys to send to the rendering thread
+                // Send event to rendering thread
                 WindowEvent::KeyboardInput { input, ..} => {
-                    // TODO: early return
-                    if let Ok(mut keys) = arc_pressed_keys.lock() {
-                        if let Some(keycode) = input.virtual_keycode {
-                            match input.state {
-                                Released => {
-                                    if keys.contains(&keycode) {
-                                        let i = keys.iter().position(|&k| k == keycode).unwrap();
-                                        keys.remove(i);
-                                    }
-                                },
-                                Pressed => {
-                                    if !keys.contains(&keycode) {
-                                        keys.push(keycode);
-                                    }
-                                }
-                            }
-                            // Handle escape separately
-                            if let Escape = keycode {
-                                *control_flow = ControlFlow::Exit;
-                            }
-                        }   
+                    if let Err(e) = tx.send(InputEvent::Key(input)) {
+                        eprintln!("Seems reciever has died, e: {}", e);
+                    }
+
+                    if let Some(Escape) = input.virtual_keycode {
+                        *control_flow = ControlFlow::Exit;
                     }
                 },
                 _ => (),
             }
             Event::DeviceEvent { event, .. } => match event {
                 DeviceEvent::MouseMotion {delta} => {
-                    println!("delta0: {}, delta1: {}", delta.0, delta.1);
+                    // println!("deltaX: {}, deltaY: {}", delta.0, delta.1);
                 },
                 _ => { }
             }
