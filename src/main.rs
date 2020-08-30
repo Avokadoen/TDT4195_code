@@ -78,24 +78,28 @@ fn main() {
             gl::DebugMessageCallback(Some(util::debug_callback), ptr::null());
         }
 
-        // Debug triangles
-        let mut pos: f32 = -1.0;
-        let stride: f32 = 2.0 / 5.0;
-        let mut vertices = Vec::<f32>::new();
-        let mut indices = Vec::<u32>::new();
-        for i in 0..5 {
-            let mut new_triangle = vec![
-                pos, -0.5, 0.0,
-                pos + stride, -0.5, 0.0,
-                pos + stride / 2.0, 0.5, 0.0
-            ];
+        // Pyramid
+        let vertices = vec![
+            -0.5, -0.5, 0.5,
+            0.5, -0.5, 0.5,
+            0.0, 0.5, 0.0,
 
-            vertices.append(&mut new_triangle);
-            let index = i * 3;
-            indices.append(&mut vec![index, index + 1, index + 2]);
+            0.5, -0.5, 0.5,
+            0.5, -0.5, -0.5,
 
-            pos += stride;
-        }
+            -0.5, -0.5, 0.5,
+            -0.5, -0.5, -0.5,
+
+            -0.5, -0.5, -0.5,
+            0.5, -0.5, -0.5,
+        ];
+
+        let indices = vec![
+            0, 1, 2,
+            3, 4, 2,
+            2, 6, 5,
+            2, 8, 7
+        ];
 
         // We could also inline hardcoded 5 triangles, but what's the fun in that ;)
         // Of course this would lead to easier code to read which is faster and objectively better ...
