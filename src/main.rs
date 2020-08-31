@@ -12,7 +12,7 @@ mod util;
 mod gl_utils;
 
 use gl_utils::{
-    triangle::Triangle,
+    geometric_object::GeometricObject,
     bindable::Bindable, 
     shaders::program::ProgramBuilder, 
     camera::{VecDir, CameraBuilder}
@@ -104,7 +104,7 @@ fn main() {
         // We could also inline hardcoded 5 triangles, but what's the fun in that ;)
         // Of course this would lead to easier code to read which is faster and objectively better ...
         let my_triangle = {
-           Triangle::init(&vertices, &indices)
+           GeometricObject::init(&vertices, &indices)
         };
 
         // Basic usage of shader helper
