@@ -41,7 +41,7 @@ fn main() {
         .with_resizable(false)
         .with_maximized(false)
         .with_always_on_top(true);
-        // .with_fullscreen(Some(Fullscreen::Borderless(el.primary_monitor())));
+        //.with_fullscreen(Some(Fullscreen::Borderless(el.primary_monitor())));
 
     let cb = glutin::ContextBuilder::new()
         .with_vsync(true);
