@@ -96,11 +96,6 @@ fn main() {
             .attach_file("assets/shaders/main.frag")
             .link();
 
-            
-        if let Err(e) = program.locate_uniform("elapsed") {
-            eprint!("Failed to find elapsed, probably loading wrong shader. err: {}", e);
-            return;
-        };
 
         if let Err(e) = program.locate_uniform("transform") {
             eprint!("Failed to find transform, probably loading wrong shader. err: {}", e);
@@ -131,7 +126,7 @@ fn main() {
         // The main rendering loop
         loop {
             let now = std::time::Instant::now();
-            let elapsed = now.duration_since(first_frame_time).as_secs_f32();
+            // let elapsed = now.duration_since(first_frame_time).as_secs_f32();
             let delta_time = now.duration_since(last_frame_time).as_secs_f32();
             last_frame_time = now;
 
@@ -177,15 +172,11 @@ fn main() {
 
             unsafe {
                 gl::ClearColor(0.163, 0.163, 0.163, 1.0);
-                gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+                gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT | gl::STENCIL_BUFFER_BIT);
 
                 my_triangle.bind();
                 gl::UseProgram(program.program_id);
 
-                if let Err(e) = program.set_uniform1("elapsed", elapsed, gl::Uniform1f) {
-                    eprintln!("{}", e)
-                };
-       
                 gl::DrawElements(
                     gl::TRIANGLES,
                     my_triangle.count,
