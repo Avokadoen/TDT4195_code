@@ -62,9 +62,9 @@ impl Camera {
         self.orientation = glm::quat_rotate(&self.orientation, self.yaw, &glm::vec3(0.0, 1.0, 0.0));
 
         // Avoid float rounding errors
-        let one_rot = 2.0 * std::f32::consts::PI;
-        self.yaw = self.yaw % one_rot;
-        self.pitch = self.pitch % one_rot;
+        let one_rotation = 2.0 * std::f32::consts::PI;
+        self.yaw = self.yaw % one_rotation;
+        self.pitch = self.pitch % one_rotation;
 
         self.assign_camera_uniform(&program);
     }

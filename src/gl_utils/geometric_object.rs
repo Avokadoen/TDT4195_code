@@ -45,7 +45,7 @@ impl GeometricObject {
     pub const VERT_INDX: usize = 0;
     pub const INDC_INDX: usize = 1;
 
-    pub fn init(vertices: &Vec<f32>, indices: &Vec<u32>) -> GeometricObject  {
+    pub fn init(vertices: &Vec<f32>, indices: &Vec<u32>) -> Self  {
         let mut id: GLuint = 0;
         let mut vbo_ids: [GLuint; 2] = [0; 2];
 
@@ -56,7 +56,7 @@ impl GeometricObject {
             gl::GenBuffers(2, vbo_ids.as_mut_ptr());
 
             // instantiate vertices buffer
-            gl::BindBuffer(gl::ARRAY_BUFFER, vbo_ids[GeometricObject::VERT_INDX]);
+            gl::BindBuffer(gl::ARRAY_BUFFER, vbo_ids[Self::VERT_INDX]);
             gl::BufferData(
                 gl::ARRAY_BUFFER, 
                 helpers::byte_size_of_array(vertices),
@@ -65,7 +65,7 @@ impl GeometricObject {
             );
             
             // instantiate indices buffer
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, vbo_ids[GeometricObject::INDC_INDX]);
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, vbo_ids[Self::INDC_INDX]);
             gl::BufferData(
                 gl::ELEMENT_ARRAY_BUFFER, 
                 helpers::byte_size_of_array(indices),
@@ -92,7 +92,7 @@ impl GeometricObject {
             gl::BindVertexArray(0);
         }
 
-        GeometricObject {
+        Self {
             id,
             vbo_ids,
             count: indices.len() as i32
