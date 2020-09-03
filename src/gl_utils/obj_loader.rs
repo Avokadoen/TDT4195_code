@@ -46,14 +46,13 @@ pub fn parse_obj(obj_data: &str) -> Result<ParsedObj, ObjParseError> {
     // TODO: better error handling
     for line in obj_data.lines() {
         let line = line.trim_start();
-        println!("{}", line);
         // TODO: g
         if line.starts_with("#") {
             continue;
         } else if line.starts_with("vp") {
             todo!("space vertices");
         } else if line.starts_with("vn") {
-            todo!("vertex normals");
+            // todo!("vertex normals");
         } else if line.starts_with("vt") {
             todo!("uv mapping");
         } else if line.starts_with("g") {
@@ -81,11 +80,11 @@ pub fn parse_obj(obj_data: &str) -> Result<ParsedObj, ObjParseError> {
                 }
 
                 match valuesu32[i] {
-                    Some(v) => faces.push(v),
+                    Some(v) => faces.push(v - 1),
                     None => { eprintln!("error parsing faces") } // TODO
                  }
 
-                valuesf32[i] = None;
+                valuesu32[i] = None;
             }
         }
 
@@ -108,7 +107,7 @@ fn parse_line<T: FromStr>(target: &mut [Option<T>; 4], line: &str) {
     
     let mut i = 0;
     for value in values {
-        if i >= 3 {
+        if i > 3 {
             break;
         }
 

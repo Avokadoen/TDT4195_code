@@ -25,7 +25,7 @@ impl Camera {
     fn assign_camera_uniform(&self, program: &Program) {
         let camera_transform = self.projection * glm::quat_to_mat4(&self.orientation) * self.transform;
         if let Err(e) = program.set_uniform_matrix("camera", camera_transform.as_ptr(), gl::UniformMatrix4fv) {
-            eprintln!("Error occured in camera::forward, e: {}", e);
+            eprintln!("Error occured while assigning camera, e: {}", e);
         }
     }
 

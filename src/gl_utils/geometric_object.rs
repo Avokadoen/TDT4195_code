@@ -75,7 +75,7 @@ impl GeometricObject {
             
             // Vertex attributes
             gl::EnableVertexAttribArray(0);
-            let components = 3;
+            let components = 4;
             let stride = components * helpers::size_of::<f32>();
             gl::VertexAttribPointer(
                 0,                      // index of the generic vertex attribute ("layout (location = 0)")

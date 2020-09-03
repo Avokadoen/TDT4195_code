@@ -77,37 +77,15 @@ fn main() {
             gl::Enable(gl::DEBUG_OUTPUT_SYNCHRONOUS);
             gl::DebugMessageCallback(Some(util::debug_callback), ptr::null());
         }
-
-        // // Pyramid
-        // let vertices = vec![
-        //     -0.5, -0.5, 0.5,
-        //     0.5, -0.5, 0.5,
-        //     0.0, 0.5, 0.0,
-
-        //     0.5, -0.5, 0.5,
-        //     0.5, -0.5, -0.5,
-
-        //     -0.5, -0.5, 0.5,
-        //     -0.5, -0.5, -0.5,
-
-        //     -0.5, -0.5, -0.5,
-        //     0.5, -0.5, -0.5,
-        // ];
-
-        // let indices = vec![
-        //     0, 1, 2,
-        //     3, 4, 2,
-        //     2, 6, 5,
-        //     2, 8, 7
-        // ];
-
         
         // We could also inline hardcoded 5 triangles, but what's the fun in that ;)
         // Of course this would lead to easier code to read which is faster and objectively better ...
         let my_triangle = {
-            let parsed_obj = load_and_parse_obj("assets/objs/tetrahedron.obj");
+            let parsed_obj = load_and_parse_obj("assets/objs/teapot.obj");
             match parsed_obj {
-                Ok(o) => GeometricObject::init(&o.vertices, &o.faces),
+                Ok(o) => {
+                    GeometricObject::init(&o.vertices, &o.faces) 
+                },
                 Err(e) => panic!("Failed to load obj, e: {}", e)
             }
         };
@@ -123,6 +101,16 @@ fn main() {
             eprint!("Failed to find elapsed, probably loading wrong shader. err: {}", e);
             return;
         };
+
+        if let Err(e) = program.locate_uniform("transform") {
+            eprint!("Failed to find transform, probably loading wrong shader. err: {}", e);
+            return;
+        };
+
+        let transform = glm::scale(&glm::identity::<f32, glm::U4>(), &glm::vec3(0.01, 0.01, 0.01));
+        if let Err(e) = program.set_uniform_matrix("transform", transform.as_ptr(), gl::UniformMatrix4fv) {
+            eprintln!("Error occured while assigning transform, e: {}", e);
+        }
 
         let mut camera = CameraBuilder::init()
             .projection(screen_dimensions.width / screen_dimensions.height, 1.4, 0.1, 40.0)
@@ -189,7 +177,7 @@ fn main() {
 
             unsafe {
                 gl::ClearColor(0.163, 0.163, 0.163, 1.0);
-                gl::Clear(gl::COLOR_BUFFER_BIT);
+                gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
                 my_triangle.bind();
                 gl::UseProgram(program.program_id);
