@@ -1,10 +1,18 @@
 use std::str::FromStr;
 use std::num::ParseFloatError;
 use crate::gl_utils::geometric_object::GeometricObject;
-use std::path::Path;
+use std::{fmt, path::Path};
 
 pub enum ObjParseError {
     PathReadError(std::io::Error)
+}
+
+impl fmt::Display for ObjParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ObjParseError::PathReadError(e) => e.fmt(f)
+        }
+    }
 }
 
 // TODO: evaluate if we can stream data directly to GPU somehow
@@ -48,7 +56,9 @@ pub fn parse_obj(obj_data: &str) -> Result<ParsedObj, ObjParseError> {
             todo!("vertex normals");
         } else if line.starts_with("vt") {
             todo!("uv mapping");
-        } else if line.starts_with("v") {
+        } else if line.starts_with("g") {
+            // todo!("groups");
+        }else if line.starts_with("v") {
             parse_line::<f32>(&mut valuesf32, line);
             for i in 0..valuesf32.len() {
                 match valuesf32[i] {

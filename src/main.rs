@@ -15,7 +15,7 @@ use gl_utils::{
     geometric_object::GeometricObject,
     bindable::Bindable, 
     shaders::program::ProgramBuilder, 
-    camera::{VecDir, CameraBuilder}
+    camera::{VecDir, CameraBuilder}, obj_loader::load_and_parse_obj
 };
 
 use glutin::event::{
@@ -78,33 +78,38 @@ fn main() {
             gl::DebugMessageCallback(Some(util::debug_callback), ptr::null());
         }
 
-        // Pyramid
-        let vertices = vec![
-            -0.5, -0.5, 0.5,
-            0.5, -0.5, 0.5,
-            0.0, 0.5, 0.0,
+        // // Pyramid
+        // let vertices = vec![
+        //     -0.5, -0.5, 0.5,
+        //     0.5, -0.5, 0.5,
+        //     0.0, 0.5, 0.0,
 
-            0.5, -0.5, 0.5,
-            0.5, -0.5, -0.5,
+        //     0.5, -0.5, 0.5,
+        //     0.5, -0.5, -0.5,
 
-            -0.5, -0.5, 0.5,
-            -0.5, -0.5, -0.5,
+        //     -0.5, -0.5, 0.5,
+        //     -0.5, -0.5, -0.5,
 
-            -0.5, -0.5, -0.5,
-            0.5, -0.5, -0.5,
-        ];
+        //     -0.5, -0.5, -0.5,
+        //     0.5, -0.5, -0.5,
+        // ];
 
-        let indices = vec![
-            0, 1, 2,
-            3, 4, 2,
-            2, 6, 5,
-            2, 8, 7
-        ];
+        // let indices = vec![
+        //     0, 1, 2,
+        //     3, 4, 2,
+        //     2, 6, 5,
+        //     2, 8, 7
+        // ];
 
+        
         // We could also inline hardcoded 5 triangles, but what's the fun in that ;)
         // Of course this would lead to easier code to read which is faster and objectively better ...
         let my_triangle = {
-           GeometricObject::init(&vertices, &indices)
+            let parsed_obj = load_and_parse_obj("assets/objs/tetrahedron.obj");
+            match parsed_obj {
+                Ok(o) => GeometricObject::init(&o.vertices, &o.faces),
+                Err(e) => panic!("Failed to load obj, e: {}", e)
+            }
         };
 
         // Basic usage of shader helper
