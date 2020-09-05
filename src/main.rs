@@ -6,7 +6,7 @@ use std::{
     ptr,
 };
 use std::thread;
-use std::sync::{Mutex, Arc, RwLock, mpsc};
+use std::{env, sync::{Mutex, Arc, RwLock, mpsc}};
 
 mod util;
 mod gl_utils;
@@ -90,6 +90,9 @@ fn main() {
 
         // Set up openGL
         unsafe {
+            gl::Enable(gl::DEPTH_TEST);
+            gl::DepthFunc(gl::ALWAYS); 
+
             gl::Enable(gl::CULL_FACE);
             gl::Disable(gl::MULTISAMPLE);
             gl::Enable(gl::BLEND);

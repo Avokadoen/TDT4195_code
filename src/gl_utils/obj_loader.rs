@@ -1,6 +1,4 @@
 use std::str::FromStr;
-use std::num::ParseFloatError;
-use crate::gl_utils::geometric_object::GeometricObject;
 use std::{fmt, path::Path};
 
 pub enum ObjParseError {
@@ -46,7 +44,7 @@ pub fn parse_obj(obj_data: &str) -> Result<ParsedObj, ObjParseError> {
     // TODO: better error handling
     for line in obj_data.lines() {
         let line = line.trim_start();
-        // TODO: g
+        // TODO: g: integrate with a simple scene graph system 
         if line.starts_with("#") {
             continue;
         } else if line.starts_with("vp") {

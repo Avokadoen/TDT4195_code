@@ -11,7 +11,7 @@ void main()
     float checker = float(isEvenX) * 1.0;
 
     bool isEvenY = mod(gl_FragCoord.y / tileSize, 2) < 1;
-    // hiding our sinful shader if with syntax :)
+    // hiding our sinful shader 'if' with syntax :)
     checker = isEvenY ? 1 - checker : checker; 
 
     color = vec4(checker, checker, checker, 1.0f);
