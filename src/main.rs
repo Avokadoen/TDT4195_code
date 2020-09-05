@@ -36,12 +36,32 @@ enum InputEvent {
 fn main() {
     // Set up the necessary objects to deal with windows and event handling
     let el = glutin::event_loop::EventLoop::new();
-    let wb = glutin::window::WindowBuilder::new()
-        .with_title("Gloom-rs")
-        .with_resizable(false)
-        .with_maximized(false)
-        .with_always_on_top(true);
-        //.with_fullscreen(Some(Fullscreen::Borderless(el.primary_monitor())));
+    
+    let wb = {
+        let mut wb  = glutin::window::WindowBuilder::new()
+            .with_title("Gloom-rs")
+            .with_resizable(false)
+            .with_always_on_top(true);
+
+        let args: Vec<String> = env::args().collect();
+        for arg in args.iter().skip(1) {
+            match &arg[..] {
+                "-f" | "-F" => {
+                    wb = wb.with_maximized(true)
+                    .with_fullscreen(Some(Fullscreen::Borderless(el.primary_monitor())));
+                },
+                "-h" => {
+                    let h_command = "\n-h => 'display this information'";
+                    let f_command = "\n-f | -F => 'fullscreen mode'"; // TODO: fov and mouse sense should be connected to this somehow
+                    println!("Rendering toy code{}{}", h_command, f_command);
+                    return;
+                },
+                c => eprintln!("Unknown command '{}'", c)
+            }
+        }
+
+        wb
+    };
 
     let cb = glutin::ContextBuilder::new()
         .with_vsync(true);
