@@ -205,6 +205,7 @@ impl ProgramBuilder {
         true
     }
 
+    #[must_use = "Program can only be built using the link() function"]
     pub fn link(self) -> Program {
         unsafe {
             for &shader in &self.shaders {

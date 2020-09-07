@@ -6,16 +6,18 @@ use std::{
     ptr,
 };
 use std::thread;
-use std::{env, sync::{Mutex, Arc, RwLock, mpsc}};
+use std::{env, sync::{Arc, RwLock, mpsc}};
 
 mod util;
 mod gl_utils;
 
 use gl_utils::{
     geometric_object::GeometricObject,
+    vertex_attributes::VerticesAttributesPair,
     bindable::Bindable, 
     shaders::program::ProgramBuilder, 
-    camera::{VecDir, CameraBuilder}, obj_loader::load_and_parse_obj
+    camera::{VecDir, CameraBuilder}, 
+    obj_loader::load_and_parse_obj,
 };
 
 use glutin::event::{
@@ -125,14 +127,15 @@ fn main() {
             return;
         };
 
-        let transform = glm::scale(&glm::identity::<f32, glm::U4>(), &glm::vec3(0.01, 0.01, 0.01));
+        let transform = glm::scale(&glm::identity::<f32, glm::U4>(), &glm::vec3(2.0, 2.0, 2.0));
+        let transform = glm::translate(&transform, &glm::vec3(0.0, 0.0, 2.0));
         if let Err(e) = program.set_uniform_matrix("transform", transform.as_ptr(), gl::UniformMatrix4fv) {
             eprintln!("Error occured while assigning transform, e: {}", e);
         }
 
         let mut camera = CameraBuilder::init()
             .projection(screen_dimensions.width / screen_dimensions.height, 1.4, 0.1, 40.0)
-            .transform(&glm::vec3(0.0, 0.0, -2.0))
+            .translation(&glm::vec3(0.0, 0.0, 0.0))
             .move_speed(2.0)
             .turn_sensitivity(0.2)
             .build_and_attach_to_program(&mut program);
