@@ -4,7 +4,9 @@ This is a fork of [gloom-rs](https://github.com/mgimle/gloom-rs) for a graphics 
 
 ## Report for submission
 
-My report can be found in latex form [here](https://www.overleaf.com/read/vfctcktgxysj)
+My report can be found in latex form 
+* [Assignment 1](https://www.overleaf.com/read/vfctcktgxysj)
+* [Assignment 2](https://www.overleaf.com/read/vnzyrbgmmmmt)
 
 ## Sources
 
