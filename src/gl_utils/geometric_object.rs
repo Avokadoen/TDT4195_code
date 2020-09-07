@@ -3,7 +3,8 @@ use gl::types::{GLuint, GLsizei};
 
 use super::{
     helpers,
-    bindable::Bindable
+    bindable::Bindable,
+    vertex_attributes::VerticesAttributesPair
 };
 
 pub struct GeometricObject {
@@ -45,7 +46,7 @@ impl GeometricObject {
     pub const VERT_INDX: usize = 0;
     pub const INDC_INDX: usize = 1;
 
-    pub fn init(vertices: &Vec<f32>, indices: &Vec<u32>) -> Self  {
+    pub fn init<T>(vert_attrib_pair: &VerticesAttributesPair<T>, indices: &Vec<u32>) -> Self  {
         let mut id: GLuint = 0;
         let mut vbo_ids: [GLuint; 2] = [0; 2];
 
@@ -59,8 +60,8 @@ impl GeometricObject {
             gl::BindBuffer(gl::ARRAY_BUFFER, vbo_ids[Self::VERT_INDX]);
             gl::BufferData(
                 gl::ARRAY_BUFFER, 
-                helpers::byte_size_of_array(vertices),
-                helpers::array_to_c_void(vertices),
+                helpers::byte_size_of_array(&vert_attrib_pair.buffer_data),
+                helpers::array_to_c_void(&vert_attrib_pair.buffer_data),
                 gl::STATIC_DRAW
             );
             
@@ -74,17 +75,26 @@ impl GeometricObject {
             );
             
             // Vertex attributes
-            gl::EnableVertexAttribArray(0);
-            let components = 4;
-            let stride = components * helpers::size_of::<f32>();
-            gl::VertexAttribPointer(
-                0,                      // index of the generic vertex attribute ("layout (location = 0)")
-                components,             // the number of components per generic vertex attribute
-                gl::FLOAT,              // data type
-                gl::FALSE,              // normalized (int-to-float conversion)
-                stride,                 // stride (byte offset between consecutive attributes)
-                std::ptr::null()        // offset of the first component
-            );
+            let size_of_type = helpers::size_of::<T>();
+            let total_components: gl::types::GLint = vert_attrib_pair.attributes.iter()
+                .map(|a| {
+                    a.size
+                })
+                .sum();
+
+            let stride = total_components * size_of_type;
+            for attrib in &vert_attrib_pair.attributes {
+                gl::VertexAttribPointer(
+                    attrib.index,                           // index of the generic vertex attribute ("layout (location = 0)")
+                    attrib.size,                            // the number of components per generic vertex attribute
+                    vert_attrib_pair.data_type,             // data type
+                    gl::FALSE,                              // normalized (int-to-float conversion)
+                    stride,                                 // stride (byte offset between consecutive attributes)
+                    helpers::offset::<T>(attrib.offset)     // offset of the first component
+                );
+                gl::EnableVertexAttribArray(attrib.index);
+            }
+     
             
             // Better safe than sorry :) 
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);

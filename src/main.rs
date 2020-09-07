@@ -102,17 +102,32 @@ fn main() {
             gl::Enable(gl::DEBUG_OUTPUT_SYNCHRONOUS);
             gl::DebugMessageCallback(Some(util::debug_callback), ptr::null());
         }
+
+        let vbo_data = {
+            let vertices: Vec::<f32> = vec![
+                -1.0, -1.0, 0.0, 1.0, 0.0, 0.0, 1.0,
+                 1.0, -1.0, 0.0, 0.0, 1.0, 0.0, 1.0,
+                 0.0,  1.0, 0.0, 0.0, 0.0, 1.0, 1.0
+            ];
+
+            VerticesAttributesPair::init(vertices, gl::FLOAT)
+                .add_attribute(0, 0, 3, 0)
+                .add_attribute(1, 1, 4, 3)
+        };
+      
+        let indices = vec![
+            2, 1, 0,
+        ];
         
-        // We could also inline hardcoded 5 triangles, but what's the fun in that ;)
-        // Of course this would lead to easier code to read which is faster and objectively better ...
-        let my_triangle = {
-            let parsed_obj = load_and_parse_obj("assets/objs/teapot.obj");
-            match parsed_obj {
-                Ok(o) => {
-                    GeometricObject::init(&o.vertices, &o.faces) 
-                },
-                Err(e) => panic!("Failed to load obj, e: {}", e)
-            }
+        let geometry = {
+            // let parsed_obj = load_and_parse_obj("assets/objs/teapot.obj");
+            // match parsed_obj {
+            //     Ok(o) => {
+            //         GeometricObject::init(&o.vertices, &o.faces) 
+            //     },
+            //     Err(e) => panic!("Failed to load obj, e: {}", e)
+            // }
+            GeometricObject::init(&vbo_data, &indices)
         };
 
         // Basic usage of shader helper
@@ -178,7 +193,7 @@ fn main() {
                         }
                     }
                     InputEvent::Mouse(mouse_input) => {
-                        camera.turn(mouse_input, delta_time, &program);
+                        // camera.turn(mouse_input, delta_time, &program);
                     }
                 }
             });
@@ -197,21 +212,21 @@ fn main() {
             });
 
             unsafe {
-                gl::ClearColor(0.163, 0.163, 0.163, 1.0);
+                gl::ClearColor(0.05, 0.05, 0.3, 1.0);
                 gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT | gl::STENCIL_BUFFER_BIT);
 
-                my_triangle.bind();
+                geometry.bind();
                 gl::UseProgram(program.program_id);
 
                 gl::DrawElements(
                     gl::TRIANGLES,
-                    my_triangle.count,
+                    geometry.count,
                     gl::UNSIGNED_INT,
                     std::ptr::null() 
                 );
 
                 gl::UseProgram(0);
-                my_triangle.unbind();
+                geometry.unbind();
             }
 
             context.swap_buffers().unwrap();

@@ -15,8 +15,8 @@ impl fmt::Display for ObjParseError {
 
 // TODO: evaluate if we can stream data directly to GPU somehow
 pub struct ParsedObj {
-    pub vertices: Vec<f32>,
-    pub faces: Vec<u32> // TODO: remember this starts with 1 for some reason
+    pub vertices: Vec<f32>, // TODO: Return VerticesAttributesPair
+    pub faces: Vec<u32>
 }
 
 pub fn load_and_parse_obj(obj_path: &str) -> Result<ParsedObj, ObjParseError> {
