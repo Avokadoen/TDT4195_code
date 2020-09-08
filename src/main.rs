@@ -93,7 +93,7 @@ fn main() {
         // Set up openGL
         unsafe {
             gl::Enable(gl::DEPTH_TEST);
-            gl::DepthFunc(gl::ALWAYS); 
+            gl::DepthFunc(gl::LESS);
 
             gl::Enable(gl::CULL_FACE);
             gl::Disable(gl::MULTISAMPLE);
@@ -103,19 +103,20 @@ fn main() {
             gl::DebugMessageCallback(Some(util::debug_callback), ptr::null());
         }
 
+        //
         let vbo_data = {
             let vertices: Vec::<f32> = vec![
-                -1.0, -1.0, 0.0,    1.0, 0.0, 0.0, 1.0,
-                 1.0, -1.0, 0.0,    1.0, 0.0, 0.0, 1.0,
-                 0.0,  1.0, 0.0,    1.0, 0.0, 0.0, 1.0,
+                -2.0, -1.0,  0.5,   0.0, 1.0, 0.0, 0.6,
+                 0.0, -1.0,  0.5,   0.0, 1.0, 0.0, 0.6,
+                -1.0,  1.0,  0.5,   0.0, 1.0, 0.0, 0.6,
 
-                 -3.0, -1.0, 0.0,   0.0, 1.0, 0.0, 1.0,
-                 -1.0, -1.0, 0.0,   0.0, 1.0, 0.0, 1.0,
-                 -2.0,  1.0, 0.0,   0.0, 1.0, 0.0, 1.0,
+                -1.0, -1.0,  0.0,   1.0, 0.0, 0.0, 0.5,
+                 1.0, -1.0,  0.0,   1.0, 0.0, 0.0, 0.5,
+                 0.0,  1.0,  0.0,   1.0, 0.0, 0.0, 0.5,
 
-                 1.0, -1.0, 0.0,    0.0, 0.0, 1.0, 1.0,
-                 3.0, -1.0, 0.0,    0.0, 0.0, 1.0, 1.0,
-                 2.0,  1.0, 0.0,    0.0, 0.0, 1.0, 1.0
+                 0.0, -1.0, -0.5,   0.0, 0.0, 1.0, 0.7,
+                 2.0, -1.0, -0.5,   0.0, 0.0, 1.0, 0.7,
+                 1.0,  1.0, -0.5,   0.0, 0.0, 1.0, 0.7
             ];
 
             VerticesAttributesPair::init(vertices, gl::FLOAT)
@@ -153,7 +154,7 @@ fn main() {
         };
 
         let transform = glm::scale(&glm::identity::<f32, glm::U4>(), &glm::vec3(2.0, 2.0, 2.0));
-        let transform = glm::translate(&transform, &glm::vec3(0.0, 0.0, 2.0));
+        let transform = glm::translate(&transform, &glm::vec3(0.0, 0.0, 4.0));
         if let Err(e) = program.set_uniform_matrix("transform", transform.as_ptr(), gl::UniformMatrix4fv) {
             eprintln!("Error occured while assigning transform, e: {}", e);
         }
