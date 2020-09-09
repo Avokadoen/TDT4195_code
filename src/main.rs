@@ -93,7 +93,7 @@ fn main() {
         // Set up openGL
         unsafe {
             gl::Enable(gl::DEPTH_TEST);
-            gl::DepthFunc(gl::LESS);
+            gl::DepthFunc(gl::ALWAYS); 
 
             gl::Enable(gl::CULL_FACE);
             gl::Disable(gl::MULTISAMPLE);
@@ -102,43 +102,18 @@ fn main() {
             gl::Enable(gl::DEBUG_OUTPUT_SYNCHRONOUS);
             gl::DebugMessageCallback(Some(util::debug_callback), ptr::null());
         }
-
-        //
-        let vbo_data = {
-            let vertices: Vec::<f32> = vec![
-                -2.0, -1.0,  0.5,   0.0, 1.0, 0.0, 0.6,
-                 0.0, -1.0,  0.5,   0.0, 1.0, 0.0, 0.6,
-                -1.0,  1.0,  0.5,   0.0, 1.0, 0.0, 0.6,
-
-                -1.0, -1.0,  0.0,   1.0, 0.0, 0.0, 0.5,
-                 1.0, -1.0,  0.0,   1.0, 0.0, 0.0, 0.5,
-                 0.0,  1.0,  0.0,   1.0, 0.0, 0.0, 0.5,
-
-                 0.0, -1.0, -0.5,   0.0, 0.0, 1.0, 0.7,
-                 2.0, -1.0, -0.5,   0.0, 0.0, 1.0, 0.7,
-                 1.0,  1.0, -0.5,   0.0, 0.0, 1.0, 0.7
-            ];
-
-            VerticesAttributesPair::init(vertices, gl::FLOAT)
-                .add_attribute(0, 0, 3, 0)
-                .add_attribute(1, 1, 4, 3)
-        };
-      
-        let indices = vec![
-            2, 1, 0,
-            5, 4, 3,
-            8, 7, 6,
-        ];
         
         let geometry = {
-            // let parsed_obj = load_and_parse_obj("assets/objs/teapot.obj");
-            // match parsed_obj {
-            //     Ok(o) => {
-            //         GeometricObject::init(&o.vertices, &o.faces) 
-            //     },
-            //     Err(e) => panic!("Failed to load obj, e: {}", e)
-            // }
-            GeometricObject::init(&vbo_data, &indices)
+            let parsed_obj = load_and_parse_obj("assets/objs/teapot.obj");
+            match parsed_obj {
+                Ok(o) => {
+                    let vap = VerticesAttributesPair::init(o.vertices, gl::FLOAT)
+                        .add_attribute(0, 0, 4, 0);
+
+                    GeometricObject::init(&vap, &o.faces) 
+                },
+                Err(e) => panic!("Failed to load obj, e: {}", e)
+            }
         };
 
         // Basic usage of shader helper
@@ -148,14 +123,17 @@ fn main() {
             .link();
 
 
-        if let Err(e) = program.locate_uniform("transform") {
+        if let Err(e) = program.locate_uniform("transform[0]") {
             eprint!("Failed to find transform, probably loading wrong shader. err: {}", e);
             return;
         };
 
-        let transform = glm::scale(&glm::identity::<f32, glm::U4>(), &glm::vec3(2.0, 2.0, 2.0));
-        let transform = glm::translate(&transform, &glm::vec3(0.0, 0.0, 4.0));
-        if let Err(e) = program.set_uniform_matrix("transform", transform.as_ptr(), gl::UniformMatrix4fv) {
+        let transform = { 
+            let t = glm::translate(&glm::identity::<f32, glm::U4>(), &glm::vec3(0.0, -0.1, 1.0));
+            glm::scale(&t, &glm::vec3(0.01, 0.01, 0.01))
+        };
+
+        if let Err(e) = program.set_uniform_matrix("transform[0]", transform.as_ptr(), gl::UniformMatrix4fv) {
             eprintln!("Error occured while assigning transform, e: {}", e);
         }
 
