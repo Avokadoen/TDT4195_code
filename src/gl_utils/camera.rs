@@ -39,7 +39,6 @@ impl Camera {
                 VecDir::Up          => glm::vec3(0.0, -1.0, 0.0),
                 VecDir::Down        => glm::vec3(0.0, 1.0, 0.0),
             };
-
             glm::quat_rotate_vec3(&glm::quat_inverse(&self.orientation), &global_direction)
         };
         

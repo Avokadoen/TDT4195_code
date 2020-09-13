@@ -104,7 +104,7 @@ fn main() {
         }
         
         let geometry = {
-            let parsed_obj = load_and_parse_obj("assets/objs/teapot.obj");
+            let parsed_obj = load_and_parse_obj("assets/objs/quad.obj");
             match parsed_obj {
                 Ok(o) => {
                     let vap = VerticesAttributesPair::init(o.vertices, gl::FLOAT)
@@ -129,13 +129,9 @@ fn main() {
         };
 
         let transform = { 
-            let t = glm::translate(&glm::identity::<f32, glm::U4>(), &glm::vec3(0.0, -0.1, 1.0));
-            glm::scale(&t, &glm::vec3(0.01, 0.01, 0.01))
+            let t = glm::scale(&glm::identity::<f32, glm::U4>(), &glm::vec3(1.0, 1.0, 1.0));
+            glm::translate(&t, &glm::vec3(-0.5, -0.4, -1.0))
         };
-
-        if let Err(e) = program.set_uniform_matrix("transform[0]", transform.as_ptr(), gl::UniformMatrix4fv) {
-            eprintln!("Error occured while assigning transform, e: {}", e);
-        }
 
         let mut camera = CameraBuilder::init()
             .projection(screen_dimensions.width / screen_dimensions.height, 1.4, 0.1, 40.0)
@@ -180,10 +176,46 @@ fn main() {
                         }
                     }
                     InputEvent::Mouse(mouse_input) => {
-                        // camera.turn(mouse_input, delta_time, &program);
+                        if !disable_turn {
+                            camera.turn(mouse_input, delta_time, &program);
+                        }
                     }
                 }
             });
+
+            let camera_position = camera.position();
+            let dir_vec = {
+                let dir_vec = glm::vec3(
+                    transform[12] - camera_position.x, 
+                    transform[13] - camera_position.y, 
+                    transform[14] - camera_position.z
+                );
+
+                glm::normalize(&dir_vec)
+            };
+            // source: https://stackoverflow.com/a/18574797/11768869
+            // NOTE: this code does not account for position not being the center of the object.
+            let x_axis: glm::Vec3 = glm::normalize(&glm::cross(&glm::vec3(0.0, 1.0, 0.0), &dir_vec));
+            let y_axis: glm::Vec3 = glm::normalize(&glm::cross(&dir_vec, &x_axis));
+            let mut rot_mat: glm::Mat4 = glm::identity();
+            
+            rot_mat[0] = x_axis.x;
+            rot_mat[4] = y_axis.x;
+            rot_mat[8] = dir_vec.x;
+
+            rot_mat[1] = x_axis.y;
+            rot_mat[5] = y_axis.y;
+            rot_mat[9] = dir_vec.y;
+
+            rot_mat[2] = x_axis.z;
+            rot_mat[6] = y_axis.z;
+            rot_mat[10] = dir_vec.z;
+
+            let billboard_transformation =  rot_mat * transform;
+
+            if let Err(e) = program.set_uniform_matrix("transform[0]", billboard_transformation.as_ptr(), gl::UniformMatrix4fv) {
+                eprintln!("Error occured while assigning transform, e: {}", e);
+            }
 
             // Handle keyboard input
             pressed_keys.iter().for_each(|key| {
