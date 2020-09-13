@@ -144,14 +144,12 @@ fn main() {
             .turn_sensitivity(0.2)
             .build_and_attach_to_program(&mut program);
 
-        // Used to demonstrate keyboard handling -- feel free to remove
-        let mut _arbitrary_number = 0.0;
-
         let first_frame_time = std::time::Instant::now();
         let mut last_frame_time = first_frame_time;
 
         // TODO: Virtual input abstraction for runtime settings
-        let mut pressed_keys = Vec::<VirtualKeyCode>::with_capacity(10);
+        let mut pressed_keys = Vec::<VirtualKeyCode>::with_capacity(10);    
+        let mut disable_turn = false;
 
         // The main rendering loop
         loop {
@@ -194,6 +192,7 @@ fn main() {
                     VirtualKeyCode::S => camera.move_in_dir(VecDir::Backward, delta_time, &program),
                     VirtualKeyCode::A => camera.move_in_dir(VecDir::Left, delta_time, &program),
                     VirtualKeyCode::D => camera.move_in_dir(VecDir::Right, delta_time, &program),
+                    VirtualKeyCode::R => disable_turn = !disable_turn,
                     VirtualKeyCode::Space => camera.move_in_dir(VecDir::Up, delta_time, &program),
                     VirtualKeyCode::LControl => camera.move_in_dir(VecDir::Down, delta_time, &program),
                     _ => { }

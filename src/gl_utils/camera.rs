@@ -68,6 +68,10 @@ impl Camera {
 
         self.assign_camera_uniform(&program);
     }
+
+    pub fn position(&self) -> glm::Vec3 {
+        glm::vec3(self.translation[12], self.translation[13], self.translation[14])
+    }
 }   
 
 pub struct CameraBuilder {
@@ -149,7 +153,7 @@ impl CameraBuilder {
 
         let yaw = self.yaw.unwrap_or_else(|| {
             println!("Yaw for CameraBuilder not supplied, using default");
-            std::f32::consts::PI
+            0.0
         });
 
         let move_speed: f32 = self.move_speed.unwrap_or_else(|| {
