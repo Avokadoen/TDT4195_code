@@ -8,8 +8,9 @@ use super::{
 };
 
 pub struct GeometricObject {
-    id: GLuint,
-    vbo_ids: [GLuint; 2],
+    id: GLuint, // TODO: rename vao
+    vbo_ids: [GLuint; 3], // TODO: rename vbos
+    pub instance_count: GLsizei,
     pub count: GLsizei
 }
 
@@ -17,7 +18,7 @@ pub struct GeometricObject {
 impl Drop for GeometricObject {
     fn drop(&mut self) {
         unsafe {
-            gl::DeleteBuffers(2, self.vbo_ids.as_ptr());
+            gl::DeleteBuffers(3, self.vbo_ids.as_ptr());
             gl::DeleteVertexArrays(1, self.id as *const GLuint);
         }
     }
@@ -27,7 +28,7 @@ impl Bindable for GeometricObject {
     fn bind(&self) {
         unsafe {
             gl::BindVertexArray(self.id);
-            gl::BindBuffer(gl::ARRAY_BUFFER, self.vbo_ids[GeometricObject::VERT_INDX]);
+            gl::BindBuffer(gl::ARRAY_BUFFER, self.vbo_ids[GeometricObject::INST_INDX]);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.vbo_ids[GeometricObject::INDC_INDX]);
         }
     }
@@ -45,16 +46,17 @@ impl Bindable for GeometricObject {
 impl GeometricObject {
     pub const VERT_INDX: usize = 0;
     pub const INDC_INDX: usize = 1;
+    pub const INST_INDX: usize = 2;
 
-    pub fn init<T>(vert_attrib_pair: &VerticesAttributesPair<T>, indices: &Vec<u32>) -> Self  {
+    pub fn init<T>(vert_attrib_pair: &VerticesAttributesPair<T>, indices: &Vec<u32>, instance_transforms: &Vec<glm::Mat4>) -> Self  {
         let mut id: GLuint = 0;
-        let mut vbo_ids: [GLuint; 2] = [0; 2];
+        let mut vbo_ids: [GLuint; 3] = [0; 3];
 
         unsafe {
             gl::GenVertexArrays(1, &mut id);
             gl::BindVertexArray(id);
 
-            gl::GenBuffers(2, vbo_ids.as_mut_ptr());
+            gl::GenBuffers(3, vbo_ids.as_mut_ptr());
 
             // instantiate vertices buffer
             gl::BindBuffer(gl::ARRAY_BUFFER, vbo_ids[Self::VERT_INDX]);
@@ -82,8 +84,14 @@ impl GeometricObject {
                 })
                 .sum();
 
+            let mut inst_index = 1;
             let stride = total_components * size_of_type;
             for attrib in &vert_attrib_pair.attributes {
+                if inst_index <= attrib.index {
+                    inst_index = attrib.index + 1;
+                }
+
+                gl::EnableVertexAttribArray(attrib.index);
                 gl::VertexAttribPointer(
                     attrib.index,                           // index of the generic vertex attribute ("layout (location = 0)")
                     attrib.size,                            // the number of components per generic vertex attribute
@@ -92,10 +100,35 @@ impl GeometricObject {
                     stride,                                 // stride (byte offset between consecutive attributes)
                     helpers::offset::<T>(attrib.offset)     // offset of the first component
                 );
-                gl::EnableVertexAttribArray(attrib.index);
             }
      
+
+            gl::BindBuffer(gl::ARRAY_BUFFER, vbo_ids[Self::INST_INDX]);
+            gl::BufferData(
+                gl::ARRAY_BUFFER, 
+                helpers::byte_size_of_array(&instance_transforms),
+                helpers::array_to_c_void(&instance_transforms),
+                gl::STATIC_DRAW
+            );
             
+            let mat_size = std::mem::size_of::<glm::Mat4>() as i32;
+            let vec_size = std::mem::size_of::<glm::Vec4>() as u32;
+            for i in 0..4 {
+                let attrib_index = inst_index + i;
+                gl::EnableVertexAttribArray(attrib_index);
+                gl::VertexAttribPointer(
+                    attrib_index,                           // currently shader expects location=1
+                    4,                            
+                    gl::FLOAT,            
+                    gl::FALSE,                              
+                    mat_size,                                
+                    (i * vec_size) as *const usize as *const core::ffi::c_void
+                );
+                
+                gl::VertexAttribDivisor(attrib_index, 1);
+            }
+         
+
             // Better safe than sorry :) 
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
@@ -105,7 +138,8 @@ impl GeometricObject {
         Self {
             id,
             vbo_ids,
-            count: indices.len() as i32
+            count: indices.len() as GLsizei,
+            instance_count: instance_transforms.len() as GLsizei
         }
     }
 }

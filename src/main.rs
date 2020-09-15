@@ -93,7 +93,7 @@ fn main() {
         // Set up openGL
         unsafe {
             gl::Enable(gl::DEPTH_TEST);
-            gl::DepthFunc(gl::ALWAYS); 
+            gl::DepthFunc(gl::LESS); 
 
             gl::Enable(gl::CULL_FACE);
             gl::Disable(gl::MULTISAMPLE);
@@ -110,7 +110,17 @@ fn main() {
                     let vap = VerticesAttributesPair::init(o.vertices, gl::FLOAT)
                         .add_attribute(0, 0, 4, 0);
 
-                    GeometricObject::init(&vap, &o.faces) 
+                    let mut transforms: Vec<glm::Mat4> = Vec::new();
+                    for i in 0..10 {
+                        let new_transform: glm::Mat4 = { 
+                            let t = glm::scale(&glm::identity::<f32, glm::U4>(), &glm::vec3(0.01, 0.01, 0.01));
+                            glm::translate(&t, &glm::vec3((i * 2) as f32 * 100.0, -0.1 * 100.0, -1.0 * 100.0))
+                        };
+
+                        transforms.push(new_transform);
+                    }
+
+                    GeometricObject::init(&vap, &o.faces, &transforms) 
                 },
                 Err(e) => panic!("Failed to load obj, e: {}", e)
             }
@@ -121,21 +131,6 @@ fn main() {
             .attach_file("assets/shaders/main.vert")
             .attach_file("assets/shaders/main.frag")
             .link();
-
-
-        if let Err(e) = program.locate_uniform("transform[0]") {
-            eprint!("Failed to find transform, probably loading wrong shader. err: {}", e);
-            return;
-        };
-
-        let transform = { 
-            let t = glm::scale(&glm::identity::<f32, glm::U4>(), &glm::vec3(0.01, 0.01, 0.01));
-            glm::translate(&t, &glm::vec3(0.0, -0.1 * 100.0, -1.0 * 100.0))
-        };
-
-        if let Err(e) = program.set_uniform_matrix("transform[0]", transform.as_ptr(), gl::UniformMatrix4fv) {
-            eprintln!("Error occured while assigning transform, e: {}", e);
-        }
 
         let mut camera = CameraBuilder::init()
             .projection(screen_dimensions.width / screen_dimensions.height, 1.4, 0.1, 40.0)
@@ -180,7 +175,9 @@ fn main() {
                         }
                     }
                     InputEvent::Mouse(mouse_input) => {
-                        camera.turn(mouse_input, delta_time, &program);
+                        if !disable_turn {
+                            camera.turn(mouse_input, delta_time, &program);
+                        }
                     }
                 }
             });
@@ -206,12 +203,13 @@ fn main() {
                 geometry.bind();
                 gl::UseProgram(program.program_id);
 
-                gl::DrawElements(
+                gl::DrawElementsInstanced(
                     gl::TRIANGLES,
                     geometry.count,
                     gl::UNSIGNED_INT,
-                    std::ptr::null() 
-                );
+                    std::ptr::null(),
+                    geometry.instance_count
+                ); 
 
                 gl::UseProgram(0);
                 geometry.unbind();
