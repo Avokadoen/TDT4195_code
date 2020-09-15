@@ -143,6 +143,22 @@ impl GeometricObject {
         }
     }
 
+    pub fn draw_all(&self) {
+        self.bind();
+
+        unsafe {
+            gl::DrawElementsInstanced(
+                gl::TRIANGLES,
+                self.count,
+                gl::UNSIGNED_INT,
+                std::ptr::null(),
+                self.instance_count
+            ); 
+        }
+
+        self.unbind();
+    }
+
     pub fn update_transform(&self, index: i32, new_transform: &glm::Mat4) {
         if self.instance_count < index {
             return; // ERROR

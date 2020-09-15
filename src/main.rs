@@ -146,11 +146,10 @@ fn main() {
         let mut pressed_keys = Vec::<VirtualKeyCode>::with_capacity(10);    
         let mut disable_turn = false;
 
-        let mut test_transform: glm::Mat4 = glm::scale(&glm::identity(), &glm::vec3(0.01, 0.01, 0.01));
         // The main rendering loop
         loop {
             let now = std::time::Instant::now();
-            let elapsed = now.duration_since(first_frame_time).as_secs_f32();
+            // let elapsed = now.duration_since(first_frame_time).as_secs_f32();
             let delta_time = now.duration_since(last_frame_time).as_secs_f32();
             last_frame_time = now;
 
@@ -197,26 +196,13 @@ fn main() {
                 }
             });
 
-            test_transform = glm::translate(&test_transform, &glm::vec3(0.0, 0.0, elapsed.sin()));
-            geometry.update_transform(2, &test_transform);
-
             unsafe {
                 gl::ClearColor(0.05, 0.05, 0.3, 1.0);
                 gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT | gl::STENCIL_BUFFER_BIT);
 
-                geometry.bind();
                 gl::UseProgram(program.program_id);
-
-                gl::DrawElementsInstanced(
-                    gl::TRIANGLES,
-                    geometry.count,
-                    gl::UNSIGNED_INT,
-                    std::ptr::null(),
-                    geometry.instance_count
-                ); 
-
+                geometry.draw_all();
                 gl::UseProgram(0);
-                geometry.unbind();
             }
 
             context.swap_buffers().unwrap();
