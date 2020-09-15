@@ -146,10 +146,11 @@ fn main() {
         let mut pressed_keys = Vec::<VirtualKeyCode>::with_capacity(10);    
         let mut disable_turn = false;
 
+        let mut test_transform: glm::Mat4 = glm::scale(&glm::identity(), &glm::vec3(0.01, 0.01, 0.01));
         // The main rendering loop
         loop {
             let now = std::time::Instant::now();
-            // let elapsed = now.duration_since(first_frame_time).as_secs_f32();
+            let elapsed = now.duration_since(first_frame_time).as_secs_f32();
             let delta_time = now.duration_since(last_frame_time).as_secs_f32();
             last_frame_time = now;
 
@@ -195,6 +196,9 @@ fn main() {
                     _ => { }
                 }
             });
+
+            test_transform = glm::translate(&test_transform, &glm::vec3(0.0, 0.0, elapsed.sin()));
+            geometry.update_transform(2, &test_transform);
 
             unsafe {
                 gl::ClearColor(0.05, 0.05, 0.3, 1.0);

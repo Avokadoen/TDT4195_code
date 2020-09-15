@@ -1,5 +1,5 @@
 use gl;
-use gl::types::{GLuint, GLsizei};
+use gl::types::{GLuint, GLsizei, GLintptr};
 
 use super::{
     helpers,
@@ -140,6 +140,24 @@ impl GeometricObject {
             vbo_ids,
             count: indices.len() as GLsizei,
             instance_count: instance_transforms.len() as GLsizei
+        }
+    }
+
+    pub fn update_transform(&self, index: i32, new_transform: &glm::Mat4) {
+        if self.instance_count < index {
+            return; // ERROR
+        }
+
+        let mat4_size = std::mem::size_of::<glm::Mat4>();
+        unsafe {
+            gl::BindBuffer(gl::ARRAY_BUFFER, self.vbo_ids[Self::INST_INDX]);
+            gl::BufferSubData(
+                gl::ARRAY_BUFFER,
+                (mat4_size as i32 * index) as GLintptr,
+                mat4_size as isize,
+                new_transform.as_ptr() as *const f32 as *const core::ffi::c_void
+            );
+            gl::BindBuffer(gl::ARRAY_BUFFER, 0);
         }
     }
 }
