@@ -1,5 +1,6 @@
 extern crate nalgebra_glm as glm;
 extern crate gl;
+extern crate tobj;
 
 use glutin::event::KeyboardInput;
 use std::{
@@ -12,12 +13,11 @@ mod util;
 mod gl_utils;
 
 use gl_utils::{
-    geometric_object::GeometricObject,
-    vertex_attributes::VerticesAttributesPair,
     bindable::Bindable, 
-    shaders::program::ProgramBuilder, 
     camera::{VecDir, CameraBuilder}, 
-    obj_loader::load_and_parse_obj,
+    geometric_object::GeometricObject, 
+    mesh::Terrain, shaders::program::ProgramBuilder, 
+    vertex_attributes::VerticesAttributesPair
 };
 
 use glutin::event::{
@@ -103,33 +103,23 @@ fn main() {
             gl::DebugMessageCallback(Some(util::debug_callback), ptr::null());
         }
         
-        let geometry = {
-            let parsed_obj = load_and_parse_obj("assets/objs/teapot.obj");
-            match parsed_obj {
-                Ok(o) => {
-                    let vap = VerticesAttributesPair::init(o.vertices, gl::FLOAT)
-                        .add_attribute(0, 0, 4, 0);
+        let terrain_geometry = {
+            // TODO: utility in mesh to convert to attrib_pair vec
+            let terrain = Terrain::load("assets/objs/lunarsurface.obj");
 
-                    let mut transforms: Vec<glm::Mat4> = Vec::new();
-                    for i in 0..10 {
-                        let new_transform: glm::Mat4 = { 
-                            let t = glm::scale(&glm::identity::<f32, glm::U4>(), &glm::vec3(0.01, 0.01, 0.01));
-                            glm::translate(&t, &glm::vec3((i * 2) as f32 * 100.0, -0.1 * 100.0, -1.0 * 100.0))
-                        };
+            let buffer_attrib_pairs = vec![
+                VerticesAttributesPair::init(terrain.vertices, gl::FLOAT).add_attribute(0, 0, 3, 0),
+                VerticesAttributesPair::init(terrain.normals, gl::FLOAT).add_attribute(1, 1, 3, 0),
+            ];
 
-                        transforms.push(new_transform);
-                    }
-
-                    GeometricObject::init(&vap, &o.faces, &transforms) 
-                },
-                Err(e) => panic!("Failed to load obj, e: {}", e)
-            }
+            // TODO: I'm 99.999% certain that normal are not loaded correctly with indices atm
+            GeometricObject::init(&buffer_attrib_pairs, &terrain.indices, &vec![glm::scale(&glm::Mat4::identity(), &glm::vec3(0.02, 0.02, 0.02))])
         };
 
         // Basic usage of shader helper
-        let mut program = ProgramBuilder::new()
-            .attach_file("assets/shaders/main.vert")
-            .attach_file("assets/shaders/main.frag")
+        let mut terrain_program = ProgramBuilder::new()
+            .attach_file("assets/shaders/terrain.vert")
+            .attach_file("assets/shaders/terrain.frag")
             .link();
 
         let mut camera = CameraBuilder::init()
@@ -137,12 +127,13 @@ fn main() {
             .translation(&glm::vec3(0.0, 0.0, 0.0))
             .move_speed(2.0)
             .turn_sensitivity(0.2)
-            .build_and_attach_to_program(&mut program);
+            .build_and_attach_to_program(&mut terrain_program);
 
         let first_frame_time = std::time::Instant::now();
         let mut last_frame_time = first_frame_time;
 
         // TODO: Virtual input abstraction for runtime settings
+        // TODO: This can be an array instead of a Vec
         let mut pressed_keys = Vec::<VirtualKeyCode>::with_capacity(10);    
         let mut disable_turn = false;
 
@@ -176,7 +167,7 @@ fn main() {
                     }
                     InputEvent::Mouse(mouse_input) => {
                         if !disable_turn {
-                            camera.turn(mouse_input, delta_time, &program);
+                            camera.turn(mouse_input, delta_time, &terrain_program);
                         }
                     }
                 }
@@ -185,13 +176,13 @@ fn main() {
             // Handle keyboard input
             pressed_keys.iter().for_each(|key| {
                 match key {
-                    VirtualKeyCode::W => camera.move_in_dir(VecDir::Forward, delta_time, &program),
-                    VirtualKeyCode::S => camera.move_in_dir(VecDir::Backward, delta_time, &program),
-                    VirtualKeyCode::A => camera.move_in_dir(VecDir::Left, delta_time, &program),
-                    VirtualKeyCode::D => camera.move_in_dir(VecDir::Right, delta_time, &program),
+                    VirtualKeyCode::W => camera.move_in_dir(VecDir::Forward, delta_time, &terrain_program),
+                    VirtualKeyCode::S => camera.move_in_dir(VecDir::Backward, delta_time, &terrain_program),
+                    VirtualKeyCode::A => camera.move_in_dir(VecDir::Left, delta_time, &terrain_program),
+                    VirtualKeyCode::D => camera.move_in_dir(VecDir::Right, delta_time, &terrain_program),
                     VirtualKeyCode::R => disable_turn = !disable_turn,
-                    VirtualKeyCode::Space => camera.move_in_dir(VecDir::Up, delta_time, &program),
-                    VirtualKeyCode::LControl => camera.move_in_dir(VecDir::Down, delta_time, &program),
+                    VirtualKeyCode::Space => camera.move_in_dir(VecDir::Up, delta_time, &terrain_program),
+                    VirtualKeyCode::LControl => camera.move_in_dir(VecDir::Down, delta_time, &terrain_program),
                     _ => { }
                 }
             });
@@ -199,10 +190,7 @@ fn main() {
             unsafe {
                 gl::ClearColor(0.05, 0.05, 0.3, 1.0);
                 gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT | gl::STENCIL_BUFFER_BIT);
-
-                gl::UseProgram(program.program_id);
-                geometry.draw_all();
-                gl::UseProgram(0);
+                terrain_geometry.draw_all(&terrain_program);
             }
 
             context.swap_buffers().unwrap();
