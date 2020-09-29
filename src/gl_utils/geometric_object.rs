@@ -5,6 +5,7 @@ use super::{bindable::Bindable, helpers, shaders::program::Program, vertex_attri
 
 pub struct GeometricObject {
     id: GLuint, // TODO: rename vao
+    program_id: u32,
     vbo_ids: Vec<GLuint>, // TODO: rename vbos
     pub instance_count: GLsizei,
     pub indices_count: GLsizei,
@@ -49,7 +50,7 @@ impl GeometricObject {
     pub const INST_INDEX: usize = 1;
     
     // TODO: this should read shader string and modify locations to fit with buffers
-    pub fn init<T>(buffer_attrib_pairs: &Vec<VerticesAttributesPair<T>>, indices: &Vec<u32>, instance_transforms: &Vec<glm::Mat4>) -> Self  {
+    pub fn init<T>(program_id: u32, buffer_attrib_pairs: &Vec<VerticesAttributesPair<T>>, indices: &Vec<u32>, instance_transforms: &Vec<glm::Mat4>) -> Self  {
         let mut id: GLuint = 0;
         let buffer_count = buffer_attrib_pairs.len() + 2;
         let mut instance_location = 1; // location in shader
@@ -149,6 +150,7 @@ impl GeometricObject {
 
         Self {
             id,
+            program_id,
             vbo_ids,
             indices_count: indices.len() as GLsizei,
             instance_count: instance_transforms.len() as GLsizei,
@@ -156,11 +158,11 @@ impl GeometricObject {
         }
     }
 
-    pub fn draw_all(&self, program: &Program) {
+    pub fn draw_all(&self) {
         self.bind();
 
         unsafe {
-            gl::UseProgram(program.program_id);
+            gl::UseProgram(self.program_id);
             gl::DrawElementsInstanced(
                 gl::TRIANGLES,
                 self.indices_count,

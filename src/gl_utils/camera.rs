@@ -19,17 +19,20 @@ pub struct Camera {
     yaw: f32,
     move_speed: f32,
     turn_sensitivity: f32,
+    binded_programs: Vec<Program>
 }
 
 impl Camera {
-    fn assign_camera_uniform(&self, program: &Program) {
-        let camera_transform = self.projection * glm::quat_to_mat4(&self.orientation) * self.translation;
-        if let Err(e) = program.set_uniform_matrix("camera", camera_transform.as_ptr(), gl::UniformMatrix4fv) {
-            eprintln!("Error occured while assigning camera, e: {}", e);
+    fn assign_camera_uniform(&self) {
+        for program in &self.binded_programs {
+            let camera_transform = self.projection * glm::quat_to_mat4(&self.orientation) * self.translation;
+            if let Err(e) = program.set_uniform_matrix("camera", camera_transform.as_ptr(), gl::UniformMatrix4fv) {
+                eprintln!("Error occured while assigning camera, e: {}", e);
+            }
         }
     }
 
-    pub fn move_in_dir(&mut self, direction: VecDir, delta_time: f32, program: &Program) {
+    pub fn move_in_dir(&mut self, direction: VecDir, delta_time: f32) {
         let local_direction = {
             let global_direction = match direction {
                 VecDir::Forward     => glm::vec3(0.0, 0.0, 1.0),
@@ -51,10 +54,10 @@ impl Camera {
             &offset
         );
 
-        self.assign_camera_uniform(&program);
+        self.assign_camera_uniform();
     }
 
-    pub fn turn(&mut self, turn_vector: (f64, f64), delta_time: f32, program: &Program) {
+    pub fn turn(&mut self, turn_vector: (f64, f64), delta_time: f32) {
         self.pitch += turn_vector.1 as f32 * delta_time * self.turn_sensitivity;
         self.orientation = glm::quat_rotate(&glm::quat_identity(), self.pitch, &glm::vec3(1.0, 0.0, 0.0));
         
@@ -66,7 +69,7 @@ impl Camera {
         self.yaw = self.yaw % one_rotation;
         self.pitch = self.pitch % one_rotation;
 
-        self.assign_camera_uniform(&program);
+        self.assign_camera_uniform();
     }
 
     pub fn position(&self) -> glm::Vec3 {
@@ -137,8 +140,8 @@ impl CameraBuilder {
     }
 
     // TODO: Return Result<Camera, CustomError> 
-    #[must_use = "Camera can only be built using the build_and_attach_to_program() function"]
-    pub fn build_and_attach_to_program(self, program: &mut Program) -> Camera {
+    #[must_use = "Camera can only be built using the build_and_attach_to_programs() function"]
+    pub fn build_and_attach_to_programs(self, mut programs: Vec<Program>) -> Camera {
         let projection = self.projection.expect("CameraBuiler has no projection");
 
         let translation = self.translation.unwrap_or_else(|| {
@@ -166,6 +169,13 @@ impl CameraBuilder {
             1.0
         });
 
+        for program in &mut programs {
+            // find uniform for camera
+            if let Err(e) = program.locate_uniform("camera") {
+                eprint!("Failed to find camera, probably loading wrong shader. err: {}", e);
+            };
+        }
+
         let mut camera = Camera {
             projection,
             translation,
@@ -173,16 +183,12 @@ impl CameraBuilder {
             pitch,
             yaw,
             move_speed,
-            turn_sensitivity
-        };
-
-        // find uniform for camera
-        if let Err(e) = program.locate_uniform("camera") {
-            eprint!("Failed to find camera, probably loading wrong shader. err: {}", e);
+            turn_sensitivity,
+            binded_programs: programs
         };
 
         // TODO: HACK: Used to assign camera uniforms, resolve hack
-        camera.turn((1.0, 0.0), 0.0, &program);
+        camera.turn((1.0, 0.0), 0.0);
 
         camera
     }

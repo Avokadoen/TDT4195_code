@@ -13,7 +13,6 @@ mod util;
 mod gl_utils;
 
 use gl_utils::{
-    bindable::Bindable, 
     camera::{VecDir, CameraBuilder}, 
     geometric_object::GeometricObject, 
     mesh::Terrain, shaders::program::ProgramBuilder, 
@@ -98,11 +97,17 @@ fn main() {
             gl::Enable(gl::CULL_FACE);
             gl::Disable(gl::MULTISAMPLE);
             gl::Enable(gl::BLEND);
-            gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+            // gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
             gl::Enable(gl::DEBUG_OUTPUT_SYNCHRONOUS);
             gl::DebugMessageCallback(Some(util::debug_callback), ptr::null());
         }
         
+        // Basic usage of shader helper
+        let terrain_program = ProgramBuilder::new()
+            .attach_file("assets/shaders/terrain.vert")
+            .attach_file("assets/shaders/terrain.frag")
+            .link();
+
         let terrain_geometry = {
             // TODO: utility in mesh to convert to attrib_pair vec
             let terrain = Terrain::load("assets/objs/lunarsurface.obj");
@@ -112,21 +117,15 @@ fn main() {
                 VerticesAttributesPair::init(terrain.colors, gl::FLOAT).add_attribute(2, 2, 4, 0),
             ];
 
-            GeometricObject::init(&buffer_attrib_pairs, &terrain.indices, &vec![glm::Mat4::identity()])
+            GeometricObject::init(terrain_program.program_id, &buffer_attrib_pairs, &terrain.indices, &vec![glm::Mat4::identity()])
         };
-
-        // Basic usage of shader helper
-        let mut terrain_program = ProgramBuilder::new()
-            .attach_file("assets/shaders/terrain.vert")
-            .attach_file("assets/shaders/terrain.frag")
-            .link();
 
         let mut camera = CameraBuilder::init()
             .projection(screen_dimensions.width / screen_dimensions.height, 1.4, 0.1, 1000.0)
             .translation(&glm::vec3(0.0, 0.0, 0.0))
-            .move_speed(2.0)
+            .move_speed(14.0)
             .turn_sensitivity(0.2)
-            .build_and_attach_to_program(&mut terrain_program);
+            .build_and_attach_to_programs(vec![terrain_program]);
 
         let first_frame_time = std::time::Instant::now();
         let mut last_frame_time = first_frame_time;
@@ -166,7 +165,7 @@ fn main() {
                     }
                     InputEvent::Mouse(mouse_input) => {
                         if !disable_turn {
-                            camera.turn(mouse_input, delta_time, &terrain_program);
+                            camera.turn(mouse_input, delta_time);
                         }
                     }
                 }
@@ -175,13 +174,13 @@ fn main() {
             // Handle keyboard input
             pressed_keys.iter().for_each(|key| {
                 match key {
-                    VirtualKeyCode::W => camera.move_in_dir(VecDir::Forward, delta_time, &terrain_program),
-                    VirtualKeyCode::S => camera.move_in_dir(VecDir::Backward, delta_time, &terrain_program),
-                    VirtualKeyCode::A => camera.move_in_dir(VecDir::Left, delta_time, &terrain_program),
-                    VirtualKeyCode::D => camera.move_in_dir(VecDir::Right, delta_time, &terrain_program),
+                    VirtualKeyCode::W => camera.move_in_dir(VecDir::Forward, delta_time),
+                    VirtualKeyCode::S => camera.move_in_dir(VecDir::Backward, delta_time),
+                    VirtualKeyCode::A => camera.move_in_dir(VecDir::Left, delta_time),
+                    VirtualKeyCode::D => camera.move_in_dir(VecDir::Right, delta_time),
                     VirtualKeyCode::R => disable_turn = !disable_turn,
-                    VirtualKeyCode::Space => camera.move_in_dir(VecDir::Up, delta_time, &terrain_program),
-                    VirtualKeyCode::LControl => camera.move_in_dir(VecDir::Down, delta_time, &terrain_program),
+                    VirtualKeyCode::Space => camera.move_in_dir(VecDir::Up, delta_time),
+                    VirtualKeyCode::LControl => camera.move_in_dir(VecDir::Down, delta_time),
                     _ => { }
                 }
             });
@@ -189,7 +188,7 @@ fn main() {
             unsafe {
                 gl::ClearColor(0.05, 0.05, 0.3, 1.0);
                 gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT | gl::STENCIL_BUFFER_BIT);
-                terrain_geometry.draw_all(&terrain_program);
+                terrain_geometry.draw_all();
             }
 
             context.swap_buffers().unwrap();

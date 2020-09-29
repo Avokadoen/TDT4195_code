@@ -1,19 +1,14 @@
 #version 430 core
 
-in vec3 vert_normals;
-in vec4 vert_colors;
+in vec3 vert_normal;
+in vec4 vert_color;
 
 out vec4 color;
 
-// SOURCE: https://learnopengl.com/Advanced-OpenGL/Depth-testing
-float near = 0.01;
-float far = 40;
-
 void main()
 {
-    float ndc = gl_FragCoord.z * 2.0 - 1.0; 
-    float linearDepth = (2.0 * near * far) / (far + near - ndc * (far - near));
-    float inverseDepth =  (1 - linearDepth);
-    vec3 depthColor = vec3(vert_colors.x * inverseDepth, vert_colors.y * inverseDepth, vert_colors.z * inverseDepth);	
-    color = vec4(depthColor, 1);
+    // TODO: this should be a uniform
+    vec3 lightDirection = normalize(vec3(0.8, -0.5, 0.6));
+    color = vert_color * max(dot(vert_normal, -lightDirection), 0);
+    color.w = 1;
 }

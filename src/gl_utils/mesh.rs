@@ -39,7 +39,7 @@ impl Terrain {
         let terrain = models[0].to_owned();
         println!("Loaded {} with {} points and {} triangles.", terrain.name, terrain.mesh.positions.len() /3, terrain.mesh.indices.len() / 3);
 
-        Mesh::from(terrain.mesh, [0.0, 1.0, 1.0, 1.0])
+        Mesh::from(terrain.mesh, [1.0, 1.0, 1.0, 1.0])
     }
 }
 
