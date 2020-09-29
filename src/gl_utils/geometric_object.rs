@@ -7,14 +7,19 @@ pub struct GeometricObject {
     id: GLuint, // TODO: rename vao
     vbo_ids: Vec<GLuint>, // TODO: rename vbos
     pub instance_count: GLsizei,
-    pub count: GLsizei
+    pub indices_count: GLsizei,
+    pub buffer_count: GLsizei
 }
 
 
 impl Drop for GeometricObject {
     fn drop(&mut self) {
         unsafe {
-            gl::DeleteBuffers(3, self.vbo_ids.as_ptr());
+            for buffer in &self.vbo_ids {
+                // TODO: as we use vector, we can't delete all at once
+                // Seems the only possible solutions is a experimental function called "leak"
+                gl::DeleteBuffers(1, buffer); 
+            }
             gl::DeleteVertexArrays(1, self.id as *const GLuint);
         }
     }
@@ -43,6 +48,7 @@ impl GeometricObject {
     pub const ELEM_INDEX: usize = 0;
     pub const INST_INDEX: usize = 1;
     
+    // TODO: this should read shader string and modify locations to fit with buffers
     pub fn init<T>(buffer_attrib_pairs: &Vec<VerticesAttributesPair<T>>, indices: &Vec<u32>, instance_transforms: &Vec<glm::Mat4>) -> Self  {
         let mut id: GLuint = 0;
         let buffer_count = buffer_attrib_pairs.len() + 2;
@@ -120,7 +126,6 @@ impl GeometricObject {
             
             let mat_size = std::mem::size_of::<glm::Mat4>() as i32;
             let vec_size = std::mem::size_of::<glm::Vec4>() as u32;
-            println!("{}", instance_location);
             for i in 0..4 {
                 let attrib_index = instance_location + i;
                 gl::EnableVertexAttribArray(attrib_index);
@@ -145,8 +150,9 @@ impl GeometricObject {
         Self {
             id,
             vbo_ids,
-            count: indices.len() as GLsizei,
-            instance_count: instance_transforms.len() as GLsizei
+            indices_count: indices.len() as GLsizei,
+            instance_count: instance_transforms.len() as GLsizei,
+            buffer_count: buffer_count as GLsizei
         }
     }
 
@@ -157,7 +163,7 @@ impl GeometricObject {
             gl::UseProgram(program.program_id);
             gl::DrawElementsInstanced(
                 gl::TRIANGLES,
-                self.count,
+                self.indices_count,
                 gl::UNSIGNED_INT,
                 std::ptr::null(),
                 self.instance_count

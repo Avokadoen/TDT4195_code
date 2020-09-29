@@ -106,14 +106,13 @@ fn main() {
         let terrain_geometry = {
             // TODO: utility in mesh to convert to attrib_pair vec
             let terrain = Terrain::load("assets/objs/lunarsurface.obj");
-
             let buffer_attrib_pairs = vec![
                 VerticesAttributesPair::init(terrain.vertices, gl::FLOAT).add_attribute(0, 0, 3, 0),
                 VerticesAttributesPair::init(terrain.normals, gl::FLOAT).add_attribute(1, 1, 3, 0),
+                VerticesAttributesPair::init(terrain.colors, gl::FLOAT).add_attribute(2, 2, 4, 0),
             ];
 
-            // TODO: I'm 99.999% certain that normal are not loaded correctly with indices atm
-            GeometricObject::init(&buffer_attrib_pairs, &terrain.indices, &vec![glm::scale(&glm::Mat4::identity(), &glm::vec3(0.02, 0.02, 0.02))])
+            GeometricObject::init(&buffer_attrib_pairs, &terrain.indices, &vec![glm::Mat4::identity()])
         };
 
         // Basic usage of shader helper
@@ -123,7 +122,7 @@ fn main() {
             .link();
 
         let mut camera = CameraBuilder::init()
-            .projection(screen_dimensions.width / screen_dimensions.height, 1.4, 0.1, 40.0)
+            .projection(screen_dimensions.width / screen_dimensions.height, 1.4, 0.1, 1000.0)
             .translation(&glm::vec3(0.0, 0.0, 0.0))
             .move_speed(2.0)
             .turn_sensitivity(0.2)
