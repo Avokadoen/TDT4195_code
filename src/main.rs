@@ -12,12 +12,7 @@ use std::{env, sync::{Arc, RwLock, mpsc}};
 mod util;
 mod gl_utils;
 
-use gl_utils::{
-    camera::{VecDir, CameraBuilder}, 
-    geometric_object::GeometricObject, 
-    mesh::Terrain, shaders::program::ProgramBuilder, 
-    vertex_attributes::VerticesAttributesPair
-};
+use gl_utils::{camera::{VecDir, CameraBuilder}, geometric_object::GeometricObject, mesh::Helicopter, mesh::Terrain, shaders::program::ProgramBuilder, vertex_attributes::VerticesAttributesPair};
 
 use glutin::event::{
     Event, 
@@ -103,21 +98,26 @@ fn main() {
         }
         
         // Basic usage of shader helper
-        let terrain_program = ProgramBuilder::new()
-            .attach_file("assets/shaders/terrain.vert")
-            .attach_file("assets/shaders/terrain.frag")
+        let program = ProgramBuilder::new()
+            .attach_file("assets/shaders/main.vert")
+            .attach_file("assets/shaders/main.frag")
             .link();
 
         let terrain_geometry = {
             // TODO: utility in mesh to convert to attrib_pair vec
             let terrain = Terrain::load("assets/objs/lunarsurface.obj");
-            let buffer_attrib_pairs = vec![
-                VerticesAttributesPair::init(terrain.vertices, gl::FLOAT).add_attribute(0, 0, 3, 0),
-                VerticesAttributesPair::init(terrain.normals, gl::FLOAT).add_attribute(1, 1, 3, 0),
-                VerticesAttributesPair::init(terrain.colors, gl::FLOAT).add_attribute(2, 2, 4, 0),
-            ];
+            terrain.into_geomtric_object(program.program_id)
+        };
 
-            GeometricObject::init(terrain_program.program_id, &buffer_attrib_pairs, &terrain.indices, &vec![glm::Mat4::identity()])
+        let (body_geometry, main_rot_geometry, tail_rot_geometry, door_geometry) = {
+            let h = Helicopter::load("assets/objs/helicopter.obj");
+            // We dissect helicopter to make it easier to take ownership of each mesh
+            (
+                h.body.into_geomtric_object(program.program_id), 
+                h.main_rotor.into_geomtric_object(program.program_id), 
+                h.tail_rotor.into_geomtric_object(program.program_id), 
+                h.door.into_geomtric_object(program.program_id)
+            )
         };
 
         let mut camera = CameraBuilder::init()
@@ -125,7 +125,7 @@ fn main() {
             .translation(&glm::vec3(0.0, 0.0, 0.0))
             .move_speed(14.0)
             .turn_sensitivity(0.2)
-            .build_and_attach_to_programs(vec![terrain_program]);
+            .build_and_attach_to_programs(vec![program]);
 
         let first_frame_time = std::time::Instant::now();
         let mut last_frame_time = first_frame_time;
@@ -189,6 +189,10 @@ fn main() {
                 gl::ClearColor(0.05, 0.05, 0.3, 1.0);
                 gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT | gl::STENCIL_BUFFER_BIT);
                 terrain_geometry.draw_all();
+                body_geometry.draw_all();
+                main_rot_geometry.draw_all(); 
+                tail_rot_geometry.draw_all(); 
+                door_geometry.draw_all();
             }
 
             context.swap_buffers().unwrap();

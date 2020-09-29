@@ -24,6 +24,16 @@ impl Mesh {
             index_count,
         }
     }
+
+    pub fn into_geomtric_object(self, program_id: u32) -> GeometricObject {
+        let buffer_attrib_pairs = vec![
+            VerticesAttributesPair::init(self.vertices, gl::FLOAT).add_attribute(0, 0, 3, 0),
+            VerticesAttributesPair::init(self.normals, gl::FLOAT).add_attribute(1, 1, 3, 0),
+            VerticesAttributesPair::init(self.colors, gl::FLOAT).add_attribute(2, 2, 4, 0),
+        ];
+
+        GeometricObject::init(program_id, &buffer_attrib_pairs, &self.indices, &vec![glm::Mat4::identity()])
+    }
 }
 
 pub struct Terrain;
@@ -44,6 +54,8 @@ impl Terrain {
 }
 
 use std::ops::Index;
+
+use super::{geometric_object::GeometricObject, vertex_attributes::VerticesAttributesPair};
 pub struct Helicopter {
     pub body: Mesh,
     pub main_rotor: Mesh,
