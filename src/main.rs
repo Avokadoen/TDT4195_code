@@ -4,15 +4,16 @@ extern crate tobj;
 
 use glutin::event::KeyboardInput;
 use std::{
+    thread,
     ptr,
+    env, 
+    sync::{Arc, RwLock, mpsc}
 };
-use std::thread;
-use std::{env, sync::{Arc, RwLock, mpsc}};
 
 mod util;
 mod gl_utils;
 
-use gl_utils::{camera::{VecDir, CameraBuilder}, geometric_object::GeometricObject, mesh::Helicopter, mesh::Terrain, shaders::program::ProgramBuilder, vertex_attributes::VerticesAttributesPair};
+use gl_utils::{camera::{VecDir, CameraBuilder}, mesh::{Helicopter, Terrain}, scene_graph::SceneNode, shaders::program::ProgramBuilder};
 
 use glutin::event::{
     Event, 
@@ -103,21 +104,58 @@ fn main() {
             .attach_file("assets/shaders/main.frag")
             .link();
 
+        let single_instance = vec![glm::Mat4::identity()];
+
         let terrain_geometry = {
             // TODO: utility in mesh to convert to attrib_pair vec
             let terrain = Terrain::load("assets/objs/lunarsurface.obj");
-            terrain.into_geomtric_object(program.program_id)
+            terrain.into_geomtric_object(program.program_id, &single_instance)
         };
 
         let (body_geometry, main_rot_geometry, tail_rot_geometry, door_geometry) = {
             let h = Helicopter::load("assets/objs/helicopter.obj");
             // We dissect helicopter to make it easier to take ownership of each mesh
             (
-                h.body.into_geomtric_object(program.program_id), 
-                h.main_rotor.into_geomtric_object(program.program_id), 
-                h.tail_rotor.into_geomtric_object(program.program_id), 
-                h.door.into_geomtric_object(program.program_id)
+                h.body.into_geomtric_object(program.program_id, &single_instance), 
+                h.main_rotor.into_geomtric_object(program.program_id, &single_instance), 
+                h.tail_rotor.into_geomtric_object(program.program_id, &single_instance), 
+                h.door.into_geomtric_object(program.program_id, &single_instance)
             )
+        };
+
+        let scene_graph = {
+            let mut root_node = SceneNode::new();
+
+            let mut terrain_node = SceneNode::from_vao(terrain_geometry);
+            root_node.add_child(&terrain_node);
+            
+            let helicopter_node = {
+                let mut body_node = SceneNode::from_vao(body_geometry);
+                
+                let mut main_rot_node = SceneNode::from_vao(main_rot_geometry);
+                body_node.add_child(&main_rot_node);
+
+                let mut tail_rot_node = SceneNode::from_vao(tail_rot_geometry);
+                tail_rot_node.set_reference_point(glm::vec3(0.35,2.3,10.4));
+                body_node.add_child(&tail_rot_node);
+                
+                let door_node = SceneNode::from_vao(door_geometry);
+                body_node.add_child(&door_node);
+
+                body_node.position.z = -100.0;
+
+                main_rot_node.euler_rotation.y = 60.0;
+                tail_rot_node.euler_rotation.x = 60.0;
+
+                body_node.update_node_transformations(&glm::identity());
+                
+                body_node
+            };
+
+
+            terrain_node.add_child(&helicopter_node);
+
+            root_node
         };
 
         let mut camera = CameraBuilder::init()
@@ -188,11 +226,8 @@ fn main() {
             unsafe {
                 gl::ClearColor(0.05, 0.05, 0.3, 1.0);
                 gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT | gl::STENCIL_BUFFER_BIT);
-                terrain_geometry.draw_all();
-                body_geometry.draw_all();
-                main_rot_geometry.draw_all(); 
-                tail_rot_geometry.draw_all(); 
-                door_geometry.draw_all();
+                
+                scene_graph.draw(&camera);
             }
 
             context.swap_buffers().unwrap();

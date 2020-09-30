@@ -1,10 +1,15 @@
 use gl;
 use gl::types::{GLuint, GLsizei, GLintptr};
 
-use super::{bindable::Bindable, helpers, shaders::program::Program, vertex_attributes::VerticesAttributesPair};
+use super::{
+    bindable::Bindable, 
+    helpers, 
+    shaders::program::Program, 
+    vertex_attributes::VerticesAttributesPair
+};
 
 pub struct GeometricObject {
-    id: GLuint, // TODO: rename vao
+    pub id: GLuint, // TODO: rename vao
     program_id: u32,
     vbo_ids: Vec<GLuint>, // TODO: rename vbos
     pub instance_count: GLsizei,
@@ -30,14 +35,12 @@ impl Bindable for GeometricObject {
     fn bind(&self) {
         unsafe {
             gl::BindVertexArray(self.id);
-            gl::BindBuffer(gl::ARRAY_BUFFER, self.vbo_ids[GeometricObject::INST_INDEX]);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.vbo_ids[GeometricObject::ELEM_INDEX]);
         }
     }
 
     fn unbind(&self) {
         unsafe {
-            gl::BindBuffer(gl::ARRAY_BUFFER, 0);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
             gl::BindVertexArray(0);
         }
@@ -48,6 +51,10 @@ impl Bindable for GeometricObject {
 impl GeometricObject {
     pub const ELEM_INDEX: usize = 0;
     pub const INST_INDEX: usize = 1;
+
+    pub fn vao_id(&self) -> u32 {
+        self.id
+    }
     
     // TODO: this should read shader string and modify locations to fit with buffers
     pub fn init<T>(program_id: u32, buffer_attrib_pairs: &Vec<VerticesAttributesPair<T>>, indices: &Vec<u32>, instance_transforms: &Vec<glm::Mat4>) -> Self  {

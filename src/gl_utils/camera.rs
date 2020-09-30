@@ -12,7 +12,7 @@ pub enum VecDir {
 }
 
 pub struct Camera {
-    projection: glm::Mat4x4,
+    pub projection: glm::Mat4x4,
     translation: glm::Mat4x4,
     orientation: glm::Quat,
     pitch: f32,

@@ -1,5 +1,7 @@
 use tobj;
 
+// Author: Michael H. Gimle
+
 fn generate_color_vec(color: [f32; 4], num: usize) -> Vec<f32> {
     color.iter().cloned().cycle().take(num*4).collect()
 }
@@ -25,14 +27,14 @@ impl Mesh {
         }
     }
 
-    pub fn into_geomtric_object(self, program_id: u32) -> GeometricObject {
+    pub fn into_geomtric_object(self, program_id: u32, instance_transfoms: &Vec<glm::Mat4>) -> GeometricObject {
         let buffer_attrib_pairs = vec![
             VerticesAttributesPair::init(self.vertices, gl::FLOAT).add_attribute(0, 0, 3, 0),
             VerticesAttributesPair::init(self.normals, gl::FLOAT).add_attribute(1, 1, 3, 0),
             VerticesAttributesPair::init(self.colors, gl::FLOAT).add_attribute(2, 2, 4, 0),
         ];
 
-        GeometricObject::init(program_id, &buffer_attrib_pairs, &self.indices, &vec![glm::Mat4::identity()])
+        GeometricObject::init(program_id, &buffer_attrib_pairs, &self.indices, instance_transfoms)
     }
 }
 

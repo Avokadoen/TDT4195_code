@@ -5,3 +5,4 @@ pub mod helpers;
 pub mod shaders;
 pub mod camera;
 pub mod mesh;
+pub mod scene_graph;
