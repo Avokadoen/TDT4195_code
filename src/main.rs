@@ -123,40 +123,27 @@ fn main() {
             )
         };
 
-        let scene_graph = {
-            let mut root_node = SceneNode::new();
+        let mut scene_graph = SceneNode::new();
 
-            let mut terrain_node = SceneNode::from_vao(terrain_geometry);
-            root_node.add_child(&terrain_node);
+        let mut terrain_node = SceneNode::from_vao(terrain_geometry);
+        scene_graph.add_child(&terrain_node);
+        
+        let mut helicopter_node = SceneNode::from_vao(body_geometry);
             
-            let helicopter_node = {
-                let mut body_node = SceneNode::from_vao(body_geometry);
-                
-                let mut main_rot_node = SceneNode::from_vao(main_rot_geometry);
-                body_node.add_child(&main_rot_node);
+        let mut main_rot_node = SceneNode::from_vao(main_rot_geometry);
+        helicopter_node.add_child(&main_rot_node);
 
-                let mut tail_rot_node = SceneNode::from_vao(tail_rot_geometry);
-                tail_rot_node.set_reference_point(glm::vec3(0.35,2.3,10.4));
-                body_node.add_child(&tail_rot_node);
-                
-                let door_node = SceneNode::from_vao(door_geometry);
-                body_node.add_child(&door_node);
-
-                body_node.position.z = -100.0;
-
-                main_rot_node.euler_rotation.y = 60.0;
-                tail_rot_node.euler_rotation.x = 60.0;
-
-                body_node.update_node_transformations(&glm::identity());
-                
-                body_node
-            };
+        let mut tail_rot_node = SceneNode::from_vao(tail_rot_geometry);
+        tail_rot_node.set_reference_point(glm::vec3(0.35,2.3,10.4));
+        helicopter_node.add_child(&tail_rot_node);
+        
+        let door_node = SceneNode::from_vao(door_geometry);
+        helicopter_node.add_child(&door_node);
 
 
-            terrain_node.add_child(&helicopter_node);
+            
 
-            root_node
-        };
+        terrain_node.add_child(&helicopter_node);
 
         let mut camera = CameraBuilder::init()
             .projection(screen_dimensions.width / screen_dimensions.height, 1.4, 0.1, 1000.0)
@@ -179,6 +166,14 @@ fn main() {
             // let elapsed = now.duration_since(first_frame_time).as_secs_f32();
             let delta_time = now.duration_since(last_frame_time).as_secs_f32();
             last_frame_time = now;
+
+            main_rot_node.euler_rotation.y = main_rot_node.euler_rotation.y % 360.0; // Avoid floating point errors
+            main_rot_node.euler_rotation.y += delta_time * 1080.0; // rotate 1080 degrees each second
+
+            tail_rot_node.euler_rotation.x = tail_rot_node.euler_rotation.x % 360.0;
+            tail_rot_node.euler_rotation.x += delta_time * 1080.0;
+
+            scene_graph.update_node_transformations(&glm::identity());
 
             // Handle changes in keyboard state
             rx.try_iter().for_each(|input_event| {
