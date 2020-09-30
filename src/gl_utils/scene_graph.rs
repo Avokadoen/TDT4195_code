@@ -20,8 +20,8 @@ type Node = ManuallyDrop<Pin<Box<SceneNode>>>;
 
 pub struct SceneNode {
     pub position: glm::Vec3,
-    /// In degrees
-    pub euler_rotation: glm::Vec3,
+    /// In radians
+    pub rotation: glm::Vec3,
     pub scale: glm::Vec3,
     pub reference_point: glm::Vec3,
 
@@ -37,7 +37,7 @@ impl SceneNode {
     pub fn new() -> Node {
         ManuallyDrop::new(Pin::new(Box::new(SceneNode {
             position: glm::zero(),
-            euler_rotation: glm::zero(),
+            rotation: glm::zero(),
             scale: glm::vec3(1.0, 1.0, 1.0),
             reference_point: glm::zero(),
             current_transformation_matrix: glm::identity(),
@@ -49,7 +49,7 @@ impl SceneNode {
     pub fn from_vao(geometric_object: GeometricObject) -> Node {
         ManuallyDrop::new(Pin::new(Box::new(SceneNode {
             position: glm::zero(),
-            euler_rotation: glm::zero(),
+            rotation: glm::zero(),
             scale: glm::vec3(1.0, 1.0, 1.0),
             reference_point: glm::zero(),
             current_transformation_matrix: glm::identity(),
@@ -97,9 +97,9 @@ impl SceneNode {
             self.position.x,
             self.position.y,
             self.position.z,
-            self.euler_rotation.x,
-            self.euler_rotation.y,
-            self.euler_rotation.z,
+            self.rotation.x,
+            self.rotation.y,
+            self.rotation.z,
             self.reference_point.x,
             self.reference_point.y,
             self.reference_point.z,
@@ -123,9 +123,9 @@ impl SceneNode {
                 let mut self_mat = glm::scale(&glm::Mat4::identity(), &self.scale);
 
                 self_mat = glm::translate(&self_mat, &self.reference_point);
-                self_mat = glm::rotate(&self_mat, self.euler_rotation.x.to_radians(), &glm::vec3(1.0, 0.0, 0.0));
-                self_mat = glm::rotate(&self_mat, self.euler_rotation.y.to_radians(), &glm::vec3(0.0, 1.0, 0.0));
-                self_mat = glm::rotate(&self_mat, self.euler_rotation.z.to_radians(), &glm::vec3(0.0, 0.0, 1.0));
+                self_mat = glm::rotate(&self_mat, self.rotation.x, &glm::vec3(1.0, 0.0, 0.0));
+                self_mat = glm::rotate(&self_mat, self.rotation.y, &glm::vec3(0.0, 1.0, 0.0));
+                self_mat = glm::rotate(&self_mat, self.rotation.z, &glm::vec3(0.0, 0.0, 1.0));
                 self_mat = glm::translate(&self_mat, &glm::vec3(-self.reference_point.x, -self.reference_point.y, -self.reference_point.z));
                 
                 glm::translate(&self_mat, &self.position)

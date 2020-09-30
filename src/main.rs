@@ -13,7 +13,7 @@ use std::{
 mod util;
 mod gl_utils;
 
-use gl_utils::{camera::{VecDir, CameraBuilder}, mesh::{Helicopter, Terrain}, scene_graph::SceneNode, shaders::program::ProgramBuilder};
+use gl_utils::{camera::{VecDir, CameraBuilder}, mesh::{Helicopter, Terrain}, scene_graph::SceneNode, shaders::program::ProgramBuilder, toolbox::simple_heading_animation};
 
 use glutin::event::{
     Event, 
@@ -128,17 +128,19 @@ fn main() {
         let mut terrain_node = SceneNode::from_vao(terrain_geometry);
         scene_graph.add_child(&terrain_node);
         
-        let mut helicopter_node = SceneNode::from_vao(body_geometry);
+        let mut helicopter_node = SceneNode::new();
+        let mut body_node = SceneNode::from_vao(body_geometry);
+        helicopter_node.add_child(&body_node);
             
         let mut main_rot_node = SceneNode::from_vao(main_rot_geometry);
-        helicopter_node.add_child(&main_rot_node);
+        body_node.add_child(&main_rot_node);
 
         let mut tail_rot_node = SceneNode::from_vao(tail_rot_geometry);
         tail_rot_node.set_reference_point(glm::vec3(0.35,2.3,10.4));
-        helicopter_node.add_child(&tail_rot_node);
+        body_node.add_child(&tail_rot_node);
         
         let door_node = SceneNode::from_vao(door_geometry);
-        helicopter_node.add_child(&door_node);
+        body_node.add_child(&door_node);
 
 
             
@@ -160,18 +162,28 @@ fn main() {
         let mut pressed_keys = Vec::<VirtualKeyCode>::with_capacity(10);    
         let mut disable_turn = false;
 
+        let two_pi = 2.0 * 3.14159265359;
+        
+        helicopter_node.position.y += 10.0;
         // The main rendering loop
         loop {
             let now = std::time::Instant::now();
-            // let elapsed = now.duration_since(first_frame_time).as_secs_f32();
+            let elapsed = now.duration_since(first_frame_time).as_secs_f32();
             let delta_time = now.duration_since(last_frame_time).as_secs_f32();
             last_frame_time = now;
 
-            main_rot_node.euler_rotation.y = main_rot_node.euler_rotation.y % 360.0; // Avoid floating point errors
-            main_rot_node.euler_rotation.y += delta_time * 1080.0; // rotate 1080 degrees each second
+            main_rot_node.rotation.y = main_rot_node.rotation.y % two_pi; // Avoid floating point errors
+            main_rot_node.rotation.y += delta_time * two_pi * 3.0; // 3 times each second
 
-            tail_rot_node.euler_rotation.x = tail_rot_node.euler_rotation.x % 360.0;
-            tail_rot_node.euler_rotation.x += delta_time * 1080.0;
+            tail_rot_node.rotation.x = tail_rot_node.rotation.x % two_pi;
+            tail_rot_node.rotation.x += delta_time * two_pi * 3.0;
+
+            let heading = simple_heading_animation(elapsed);
+            helicopter_node.position.x = heading.x;
+            helicopter_node.position.z = heading.z;
+            body_node.rotation.x = heading.pitch;
+            body_node.rotation.y = heading.yaw;
+            body_node.rotation.z = heading.roll;
 
             scene_graph.update_node_transformations(&glm::identity());
 

@@ -6,3 +6,4 @@ pub mod shaders;
 pub mod camera;
 pub mod mesh;
 pub mod scene_graph;
+pub mod toolbox;
