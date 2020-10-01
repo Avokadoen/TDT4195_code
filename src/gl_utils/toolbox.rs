@@ -10,6 +10,42 @@ pub struct Heading {
     pub roll: f32,
 }
 
+impl Heading {
+    pub fn new() -> Self {
+        Self {
+            x: 0.0,
+            z: 0.0,
+            yaw: 0.0,
+            pitch: 0.0,
+            roll: 0.0
+        }
+    }
+
+    pub fn update(&mut self, time: f32) {
+        let t = time as f64;
+        let step = 0.05f64;
+        let path_size = 15f64;
+        let circuit_speed = 0.8f64;
+
+        let xpos = path_size*(2.0*t*circuit_speed).sin();
+        let nextxpos = path_size*(2.0*(t+step)*circuit_speed).sin();
+        let zpos = 3.0*path_size*(t*circuit_speed).cos();
+        let nextzpos = 3.0*path_size*((t+step)*circuit_speed).cos();
+
+        let delta_pos = glm::vec2(nextxpos-xpos, nextzpos-zpos);
+
+        let yaw = std::f64::consts::PI + delta_pos.x.atan2(delta_pos.y);
+        let pitch = -0.175 * glm::length(&delta_pos);
+        let roll = (t*circuit_speed).cos() * 0.5;
+
+        self.x = xpos as f32;
+        self.z = zpos as f32;
+        self.yaw = yaw as f32;
+        self.pitch = pitch as f32;
+        self.roll = roll as f32;
+    } 
+}
+
 pub fn simple_heading_animation(time: f32) -> Heading {
     let t = time as f64;
     let step = 0.05f64;

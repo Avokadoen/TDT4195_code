@@ -3,6 +3,7 @@ extern crate gl;
 extern crate tobj;
 
 use glutin::event::KeyboardInput;
+use my_helicopter::MyHelicopter;
 use std::{
     thread,
     ptr,
@@ -12,6 +13,7 @@ use std::{
 
 mod util;
 mod gl_utils;
+mod my_helicopter;
 
 use gl_utils::{camera::{VecDir, CameraBuilder}, mesh::{Helicopter, Terrain}, scene_graph::SceneNode, shaders::program::ProgramBuilder, toolbox::simple_heading_animation};
 
@@ -112,42 +114,21 @@ fn main() {
             terrain.into_geomtric_object(program.program_id, &single_instance)
         };
 
-        let (body_geometry, main_rot_geometry, tail_rot_geometry, door_geometry) = {
-            let h = Helicopter::load("assets/objs/helicopter.obj");
-            // We dissect helicopter to make it easier to take ownership of each mesh
-            (
-                h.body.into_geomtric_object(program.program_id, &single_instance), 
-                h.main_rotor.into_geomtric_object(program.program_id, &single_instance), 
-                h.tail_rotor.into_geomtric_object(program.program_id, &single_instance), 
-                h.door.into_geomtric_object(program.program_id, &single_instance)
-            )
-        };
-
+        
         let mut scene_graph = SceneNode::new();
-
+        
         let terrain_instance = terrain_geometry.create_geometric_instance(0).expect("failed to create terrain instance");
         let mut terrain_node = SceneNode::from_vao(terrain_instance);
         scene_graph.add_child(&terrain_node);
         
-        let mut helicopter_node = SceneNode::new();
-        let body_instance = body_geometry.create_geometric_instance(0).expect("failed to create body instance");
-        let mut body_node = SceneNode::from_vao(body_instance);
-        helicopter_node.add_child(&body_node);
-            
-        let main_rot_instance = main_rot_geometry.create_geometric_instance(0).expect("failed to create main rotor instance");
-        let mut main_rot_node = SceneNode::from_vao(main_rot_instance);
-        body_node.add_child(&main_rot_node);
+        let mut my_helicopter = MyHelicopter::init(program.program_id, 3);
+        let mut h1 = my_helicopter.create_helicopter_node(0.0).expect("something went wrong when creating helicopter node");
+        let mut h2 = my_helicopter.create_helicopter_node(1.3).expect("something went wrong when creating helicopter node");
+        let mut h3 = my_helicopter.create_helicopter_node(2.6).expect("something went wrong when creating helicopter node");
 
-        let tail_rot_instance = tail_rot_geometry.create_geometric_instance(0).expect("failed to create tail rotor instance");
-        let mut tail_rot_node = SceneNode::from_vao(tail_rot_instance);
-        tail_rot_node.set_reference_point(glm::vec3(0.35,2.3,10.4));
-        body_node.add_child(&tail_rot_node);
-        
-        let door_instance = door_geometry.create_geometric_instance(0).expect("failed to create door instance");
-        let door_node = SceneNode::from_vao(door_instance);
-        body_node.add_child(&door_node);
-
-        terrain_node.add_child(&helicopter_node);
+        terrain_node.add_child(&h1.root_node);
+        terrain_node.add_child(&h2.root_node);
+        terrain_node.add_child(&h3.root_node);
 
         let mut camera = CameraBuilder::init()
             .projection(screen_dimensions.width / screen_dimensions.height, 1.4, 0.1, 1000.0)
@@ -163,32 +144,18 @@ fn main() {
         // TODO: This can be an array instead of a Vec
         let mut pressed_keys = Vec::<VirtualKeyCode>::with_capacity(10);    
         let mut disable_turn = false;
-
-        let pi =  3.14159265359;
-        let two_pi = 2.0 * pi;
         
         let mut drawn_vaos = Vec::<u32>::new();
-        // helicopter_node.position.y += 10.0;
         // The main rendering loop
-
         loop {
             let now = std::time::Instant::now();
             let elapsed = now.duration_since(first_frame_time).as_secs_f32();
             let delta_time = now.duration_since(last_frame_time).as_secs_f32();
             last_frame_time = now;
 
-            main_rot_node.rotation.y = main_rot_node.rotation.y % two_pi; // Avoid floating point errors
-            main_rot_node.rotation.y += delta_time * two_pi * 3.0; // 3 times each second
-
-            tail_rot_node.rotation.x = tail_rot_node.rotation.x % two_pi;
-            tail_rot_node.rotation.x += delta_time * two_pi * 3.0;
-
-            let heading = simple_heading_animation(elapsed);
-            helicopter_node.position.x = heading.x;
-            helicopter_node.position.z = heading.z;
-            body_node.rotation.x = heading.pitch;
-            body_node.rotation.y = heading.yaw;
-            body_node.rotation.z = heading.roll;
+            h1.update(delta_time, elapsed);
+            h2.update(delta_time, elapsed);
+            h3.update(delta_time, elapsed);
 
             scene_graph.update_node_transformations(&glm::identity());
 

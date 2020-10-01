@@ -16,7 +16,7 @@ use super::{camera::Camera, geometric_object::GeometricInstance, geometric_objec
 // and finally prevents the compiler from dropping it automatically at all (ManuallyDrop). If that sounds like a janky solution, it's because it is.
 // Prettier, Rustier and better solutions were tried numerous times, but were all found wanting of having what I arbitrarily decided to be the required level of
 // simplicity of use.
-type Node = ManuallyDrop<Pin<Box<SceneNode>>>;
+pub type Node = ManuallyDrop<Pin<Box<SceneNode>>>;
 
 pub struct SceneNode {
     pub position: glm::Vec3,
@@ -146,19 +146,15 @@ impl SceneNode {
         }
     }
 
-    // This is just to complete the assignment, this drawing 
-    // function ignores instancing
     pub fn draw(&self, camera: &Camera, drawn_vaos: &mut Vec<u32>) {
-        unsafe {
-            if let Some(g) = &self.geometric_instance {
-                // TODO: only draw if we havent drawn that vao yet
-                if !drawn_vaos.contains(&g.vao_id) {
-                    g.draw_all();
-                    drawn_vaos.push(g.vao_id);
-                }
+        if let Some(g) = &self.geometric_instance {
+            if !drawn_vaos.contains(&g.vao_id) {
+                g.draw_all();
+                drawn_vaos.push(g.vao_id);
             }
+        }
 
-            // Check if node is drawable, set uniforms, draw
+        unsafe {
             for &child in &self.children {
                 (*child).draw(&camera, drawn_vaos);
             }
