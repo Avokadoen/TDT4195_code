@@ -7,7 +7,7 @@ extern crate nalgebra_glm as glm;
 use std::mem::ManuallyDrop;
 use std::pin::Pin;
 
-use super::{camera::Camera, geometric_object::GeometricObject};
+use super::{camera::Camera, geometric_object::GeometricInstance, geometric_object::GeometricObject};
 
 // Used to crete an unholy abomination upon which you should not cast your gaze.
 // This ended up being a necessity due to wanting to keep the code written by students as "straight forward" as possible
@@ -27,8 +27,7 @@ pub struct SceneNode {
 
     pub current_transformation_matrix: glm::Mat4,
 
-    // my hack to integrate with existing code
-    pub geometric_object: Option<GeometricObject>,
+    pub geometric_instance: Option<GeometricInstance>,
 
     pub children: Vec<*mut SceneNode>,
 }
@@ -41,22 +40,23 @@ impl SceneNode {
             scale: glm::vec3(1.0, 1.0, 1.0),
             reference_point: glm::zero(),
             current_transformation_matrix: glm::identity(),
-            geometric_object: None,
+            geometric_instance: None,
             children: vec![],
         })))
     }
 
-    pub fn from_vao(geometric_object: GeometricObject) -> Node {
+    pub fn from_vao(geometric_instance: GeometricInstance) -> Node {
         ManuallyDrop::new(Pin::new(Box::new(SceneNode {
             position: glm::zero(),
             rotation: glm::zero(),
             scale: glm::vec3(1.0, 1.0, 1.0),
             reference_point: glm::zero(),
             current_transformation_matrix: glm::identity(),
-            geometric_object: Some(geometric_object),
+            geometric_instance: Some(geometric_instance),
             children: vec![],
         })))
     }
+
     pub fn add_child(&mut self, child: &SceneNode) {
         self.children.push(child as *const SceneNode as *mut SceneNode)
     }
@@ -77,8 +77,8 @@ impl SceneNode {
             m[3],m[7],m[11],m[15],
         );
 
-        let (vao, indices) = match &self.geometric_object {
-            Some(g) => (g.id, g.indices_count),
+        let (vao, indices) = match &self.geometric_instance {
+            Some(g) => (g.vao_id, g.indices_count),
             None => (0, -1)
         }; 
         println!(
@@ -134,6 +134,11 @@ impl SceneNode {
             // Update the node's transformation matrix
             self.current_transformation_matrix = transformation_so_far * transformation;
 
+            // Again, we don't care about perfomance and always update transform
+            if let Some(g) = &self.geometric_instance {
+                g.update_transform(&self.current_transformation_matrix);
+            }
+                    
             // Recurse
             for &child in &self.children {
                 (*child).update_node_transformations(&self.current_transformation_matrix);
@@ -143,20 +148,19 @@ impl SceneNode {
 
     // This is just to complete the assignment, this drawing 
     // function ignores instancing
-    pub fn draw(&self, camera: &Camera) {
+    pub fn draw(&self, camera: &Camera, drawn_vaos: &mut Vec<u32>) {
         unsafe {
-            match &self.geometric_object {
-                Some(g) => {
-                    // Again, we don't care about perfomance and always update transform
-                    g.update_transform(0, &self.current_transformation_matrix);
+            if let Some(g) = &self.geometric_instance {
+                // TODO: only draw if we havent drawn that vao yet
+                if !drawn_vaos.contains(&g.vao_id) {
                     g.draw_all();
-                },
-                None => ()
-            };
+                    drawn_vaos.push(g.vao_id);
+                }
+            }
 
             // Check if node is drawable, set uniforms, draw
             for &child in &self.children {
-                (*child).draw(&camera);
+                (*child).draw(&camera, drawn_vaos);
             }
         }
     }

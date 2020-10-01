@@ -125,21 +125,26 @@ fn main() {
 
         let mut scene_graph = SceneNode::new();
 
-        let mut terrain_node = SceneNode::from_vao(terrain_geometry);
+        let terrain_instance = terrain_geometry.create_geometric_instance(0).expect("failed to create terrain instance");
+        let mut terrain_node = SceneNode::from_vao(terrain_instance);
         scene_graph.add_child(&terrain_node);
         
         let mut helicopter_node = SceneNode::new();
-        let mut body_node = SceneNode::from_vao(body_geometry);
+        let body_instance = body_geometry.create_geometric_instance(0).expect("failed to create body instance");
+        let mut body_node = SceneNode::from_vao(body_instance);
         helicopter_node.add_child(&body_node);
             
-        let mut main_rot_node = SceneNode::from_vao(main_rot_geometry);
+        let main_rot_instance = main_rot_geometry.create_geometric_instance(0).expect("failed to create main rotor instance");
+        let mut main_rot_node = SceneNode::from_vao(main_rot_instance);
         body_node.add_child(&main_rot_node);
 
-        let mut tail_rot_node = SceneNode::from_vao(tail_rot_geometry);
+        let tail_rot_instance = tail_rot_geometry.create_geometric_instance(0).expect("failed to create tail rotor instance");
+        let mut tail_rot_node = SceneNode::from_vao(tail_rot_instance);
         tail_rot_node.set_reference_point(glm::vec3(0.35,2.3,10.4));
         body_node.add_child(&tail_rot_node);
         
-        let door_node = SceneNode::from_vao(door_geometry);
+        let door_instance = door_geometry.create_geometric_instance(0).expect("failed to create door instance");
+        let door_node = SceneNode::from_vao(door_instance);
         body_node.add_child(&door_node);
 
         terrain_node.add_child(&helicopter_node);
@@ -162,8 +167,10 @@ fn main() {
         let pi =  3.14159265359;
         let two_pi = 2.0 * pi;
         
+        let mut drawn_vaos = Vec::<u32>::new();
         // helicopter_node.position.y += 10.0;
         // The main rendering loop
+
         loop {
             let now = std::time::Instant::now();
             let elapsed = now.duration_since(first_frame_time).as_secs_f32();
@@ -232,10 +239,11 @@ fn main() {
                 gl::ClearColor(0.05, 0.05, 0.3, 1.0);
                 gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT | gl::STENCIL_BUFFER_BIT);
                 
-                scene_graph.draw(&camera);
+                scene_graph.draw(&camera, &mut drawn_vaos);
             }
-
+            
             context.swap_buffers().unwrap();
+            drawn_vaos.clear();
         }
     });
 

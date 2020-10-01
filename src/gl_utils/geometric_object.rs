@@ -6,6 +6,7 @@ use super::{
     helpers, 
     vertex_attributes::VerticesAttributesPair};
 
+#[derive(Debug)]
 pub struct GeometricInstance {
     pub vao_id: GLuint,
     pub program_id: u32,
@@ -26,7 +27,7 @@ impl GeometricInstance {
     // TODO: Research options to only draw one instance
     /// Draws this and all other instances in this group
     pub fn draw_all(&self) {
-        draw_all(self, self.program_id, self.indices_count, self.instance_count)
+        draw_all(self, self.program_id, self.indices_count, self.instance_count);
     }
 }
 
@@ -46,6 +47,7 @@ impl Bindable for GeometricInstance {
     }
 }
 
+#[derive(Debug)]
 pub struct GeometricObject {
     pub id: GLuint, // TODO: rename vao
     program_id: u32,
@@ -214,7 +216,7 @@ impl GeometricObject {
             elem_id: self.vbo_ids[GeometricObject::ELEM_INDEX],
             instances_id: self.vbo_ids[GeometricObject::INST_INDEX],
             indices_count: self.indices_count,
-            instance_count: self.indices_count,
+            instance_count: self.instance_count,
             instance_index: index
         })
     }
