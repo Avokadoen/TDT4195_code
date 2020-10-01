@@ -8,6 +8,7 @@ pub struct HelicopterNode {
     pub door_node: Node,
     pub heading: Heading,
     pub heading_offset: f32,
+    pub pos_offset: glm::Vec3,
 }
 
 impl HelicopterNode {
@@ -22,8 +23,9 @@ impl HelicopterNode {
         self.tail_rotor_node.rotation.x += delta_time * HelicopterNode::TWO_PI * 3.0;
 
         self.heading.update(elapsed + self.heading_offset);
-        self.root_node.position.x = self.heading.x;
-        self.root_node.position.z = self.heading.z;
+        self.root_node.position.x = self.heading.x + self.pos_offset.x;
+        self.root_node.position.z = self.pos_offset.y;
+        self.root_node.position.z = self.heading.z + self.pos_offset.z;
         self.body_node.rotation.x = self.heading.pitch;
         self.body_node.rotation.y = self.heading.yaw;
         self.body_node.rotation.z = self.heading.roll;
@@ -64,7 +66,7 @@ impl MyHelicopter {
     }
 
     // TODO: error not option
-    pub fn create_helicopter_node(&mut self, heading_offset: f32) -> Option<HelicopterNode> {
+    pub fn create_helicopter_node(&mut self, heading_offset: f32, pos_offset: glm::Vec3) -> Option<HelicopterNode> {
         if self.last_instance >= self.max_instance {
             return None;
         }
@@ -96,7 +98,8 @@ impl MyHelicopter {
             tail_rotor_node,
             door_node,
             heading: Heading::new(),
-            heading_offset
+            heading_offset,
+            pos_offset
         })
     }
 }

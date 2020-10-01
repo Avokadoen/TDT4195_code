@@ -3,13 +3,14 @@ extern crate gl;
 extern crate tobj;
 
 use glutin::event::KeyboardInput;
-use my_helicopter::MyHelicopter;
+use my_helicopter::{HelicopterNode, MyHelicopter};
 use std::{
     thread,
     ptr,
     env, 
     sync::{Arc, RwLock, mpsc}
 };
+
 
 mod util;
 mod gl_utils;
@@ -121,14 +122,18 @@ fn main() {
         let mut terrain_node = SceneNode::from_vao(terrain_instance);
         scene_graph.add_child(&terrain_node);
         
-        let mut my_helicopter = MyHelicopter::init(program.program_id, 3);
-        let mut h1 = my_helicopter.create_helicopter_node(0.0).expect("something went wrong when creating helicopter node");
-        let mut h2 = my_helicopter.create_helicopter_node(1.3).expect("something went wrong when creating helicopter node");
-        let mut h3 = my_helicopter.create_helicopter_node(2.6).expect("something went wrong when creating helicopter node");
-
-        terrain_node.add_child(&h1.root_node);
-        terrain_node.add_child(&h2.root_node);
-        terrain_node.add_child(&h3.root_node);
+        let instance_count = 32 * 32; // 1024
+        let mut my_helicopter = MyHelicopter::init(program.program_id, instance_count);
+        let mut helicopter_nodes = Vec::<HelicopterNode>::new();
+        for i in 0..32 {
+            for j in 0..32 {
+                let offset = -((instance_count as f32 * 0.5) * i as f32 * 0.5)  + (i * 10) as f32;
+                let pos_offset = glm::vec3(offset, 0.0, offset);
+                let h = my_helicopter.create_helicopter_node(0.0, pos_offset).expect("something went wrong when creating helicopter node");
+                terrain_node.add_child(&h.root_node);
+                helicopter_nodes.push(h);
+            }
+        }
 
         let mut camera = CameraBuilder::init()
             .projection(screen_dimensions.width / screen_dimensions.height, 1.4, 0.1, 1000.0)
@@ -153,9 +158,9 @@ fn main() {
             let delta_time = now.duration_since(last_frame_time).as_secs_f32();
             last_frame_time = now;
 
-            h1.update(delta_time, elapsed);
-            h2.update(delta_time, elapsed);
-            h3.update(delta_time, elapsed);
+            for h in &mut helicopter_nodes {
+                h.update(delta_time, elapsed);
+            }
 
             scene_graph.update_node_transformations(&glm::identity());
 
