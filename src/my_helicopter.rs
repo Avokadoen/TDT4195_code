@@ -24,7 +24,7 @@ impl HelicopterNode {
 
         self.heading.update(elapsed + self.heading_offset);
         self.root_node.position.x = self.heading.x + self.pos_offset.x;
-        self.root_node.position.z = self.pos_offset.y;
+        self.root_node.position.y = self.pos_offset.y;
         self.root_node.position.z = self.heading.z + self.pos_offset.z;
         self.body_node.rotation.x = self.heading.pitch;
         self.body_node.rotation.y = self.heading.yaw;

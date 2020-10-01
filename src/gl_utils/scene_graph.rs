@@ -138,7 +138,6 @@ impl SceneNode {
             if let Some(g) = &self.geometric_instance {
                 g.update_transform(&self.current_transformation_matrix);
             }
-                    
             // Recurse
             for &child in &self.children {
                 (*child).update_node_transformations(&self.current_transformation_matrix);

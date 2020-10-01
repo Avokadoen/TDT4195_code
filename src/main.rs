@@ -122,13 +122,14 @@ fn main() {
         let mut terrain_node = SceneNode::from_vao(terrain_instance);
         scene_graph.add_child(&terrain_node);
         
-        let instance_count = 32 * 32; // 1024
+        let instance_count = 121; // 11 * 11
         let mut my_helicopter = MyHelicopter::init(program.program_id, instance_count);
         let mut helicopter_nodes = Vec::<HelicopterNode>::new();
-        for i in 0..32 {
-            for j in 0..32 {
-                let offset = -((instance_count as f32 * 0.5) * i as f32 * 0.5)  + (i * 10) as f32;
-                let pos_offset = glm::vec3(offset, 0.0, offset);
+        for i in 0..11 {
+            for j in 0..11 {
+                let x_offset = -((instance_count as f32 * 0.5) * i as f32 * 0.5)  + (i * 10) as f32;
+                let z_offset = -((instance_count as f32 * 0.5) * j as f32 * 0.5)  + (j * 10) as f32;
+                let pos_offset = glm::vec3(x_offset, 40.0, z_offset);
                 let h = my_helicopter.create_helicopter_node(0.0, pos_offset).expect("something went wrong when creating helicopter node");
                 terrain_node.add_child(&h.root_node);
                 helicopter_nodes.push(h);
