@@ -4,9 +4,47 @@ use gl::types::{GLuint, GLsizei, GLintptr};
 use super::{
     bindable::Bindable, 
     helpers, 
-    shaders::program::Program, 
-    vertex_attributes::VerticesAttributesPair
-};
+    vertex_attributes::VerticesAttributesPair};
+
+pub struct GeometricInstance {
+    pub vao_id: GLuint,
+    pub program_id: u32,
+    pub elem_id: GLuint,
+    pub instances_id: GLuint,
+    pub indices_count: GLsizei,
+    pub instance_count: GLsizei,
+    pub instance_index: usize,
+    // TODO: we can store a transform here, but I suspect it can create too much duplicate data
+}
+
+impl GeometricInstance {
+    pub fn update_transform(&self, new_transform: &glm::Mat4) {
+        update_transform(self.instance_index, &new_transform, self.instances_id);
+    }
+
+
+    // TODO: Research options to only draw one instance
+    /// Draws this and all other instances in this group
+    pub fn draw_all(&self) {
+        draw_all(self, self.program_id, self.indices_count, self.instance_count)
+    }
+}
+
+impl Bindable for GeometricInstance {
+    fn bind(&self) {
+        unsafe {
+            gl::BindVertexArray(self.vao_id);
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.elem_id);
+        }
+    }
+
+    fn unbind(&self) {
+        unsafe {
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
+            gl::BindVertexArray(0);
+        }
+    }
+}
 
 pub struct GeometricObject {
     pub id: GLuint, // TODO: rename vao
@@ -51,10 +89,6 @@ impl Bindable for GeometricObject {
 impl GeometricObject {
     pub const ELEM_INDEX: usize = 0;
     pub const INST_INDEX: usize = 1;
-
-    pub fn vao_id(&self) -> u32 {
-        self.id
-    }
     
     // TODO: this should read shader string and modify locations to fit with buffers
     pub fn init<T>(program_id: u32, buffer_attrib_pairs: &Vec<VerticesAttributesPair<T>>, indices: &Vec<u32>, instance_transforms: &Vec<glm::Mat4>) -> Self  {
@@ -166,38 +200,62 @@ impl GeometricObject {
     }
 
     pub fn draw_all(&self) {
-        self.bind();
-
-        unsafe {
-            gl::UseProgram(self.program_id);
-            gl::DrawElementsInstanced(
-                gl::TRIANGLES,
-                self.indices_count,
-                gl::UNSIGNED_INT,
-                std::ptr::null(),
-                self.instance_count
-            ); 
-            gl::UseProgram(0);
-        }
-
-        self.unbind();
+        draw_all(self, self.program_id, self.indices_count, self.instance_count);
     }
 
-    pub fn update_transform(&self, index: i32, new_transform: &glm::Mat4) {
-        if self.instance_count < index {
+    pub fn create_geometric_instance(&self, index: usize) -> Option<GeometricInstance> {
+        if (self.instance_count as usize) < index {
+            return None; // TODO: ERROR
+        }
+        
+        Some(GeometricInstance {
+            vao_id: self.id,
+            program_id: self.program_id,
+            elem_id: self.vbo_ids[GeometricObject::ELEM_INDEX],
+            instances_id: self.vbo_ids[GeometricObject::INST_INDEX],
+            indices_count: self.indices_count,
+            instance_count: self.indices_count,
+            instance_index: index
+        })
+    }
+
+    pub fn update_transform(&self, index: usize, new_transform: &glm::Mat4) {
+        if (self.instance_count as usize) < index {
             return; // ERROR
         }
 
-        let mat4_size = std::mem::size_of::<glm::Mat4>();
-        unsafe {
-            gl::BindBuffer(gl::ARRAY_BUFFER, self.vbo_ids[Self::INST_INDEX]);
-            gl::BufferSubData(
-                gl::ARRAY_BUFFER,
-                (mat4_size as i32 * index) as GLintptr,
-                mat4_size as isize,
-                new_transform.as_ptr() as *const f32 as *const core::ffi::c_void
-            );
-            gl::BindBuffer(gl::ARRAY_BUFFER, 0);
-        }
+        update_transform(index, &new_transform, self.vbo_ids[GeometricObject::INST_INDEX]);
     }
+}
+
+fn update_transform(index: usize, new_transform: &glm::Mat4, instance_id: GLuint) {
+    let mat4_size = std::mem::size_of::<glm::Mat4>();
+    unsafe {
+        gl::BindBuffer(gl::ARRAY_BUFFER, instance_id);
+        gl::BufferSubData(
+            gl::ARRAY_BUFFER,
+            (mat4_size * index) as GLintptr,
+            mat4_size as isize,
+            new_transform.as_ptr() as *const f32 as *const core::ffi::c_void
+        );
+        gl::BindBuffer(gl::ARRAY_BUFFER, 0);
+    }
+}
+
+fn draw_all<T: Bindable>(target: &T, program_id: GLuint, indices_count: GLsizei, instance_count: GLsizei) {
+    target.bind();
+
+    unsafe {
+        gl::UseProgram(program_id);
+        gl::DrawElementsInstanced(
+            gl::TRIANGLES,
+            indices_count,
+            gl::UNSIGNED_INT,
+            std::ptr::null(),
+            instance_count
+        ); 
+        gl::UseProgram(0);
+    }
+
+    target.unbind();
 }

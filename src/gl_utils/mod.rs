@@ -1,5 +1,5 @@
 pub mod bindable;
-pub mod geometric_object;
+pub mod geometric_object; // Rename?
 pub mod vertex_attributes;
 pub mod helpers;
 pub mod shaders;

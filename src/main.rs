@@ -142,9 +142,6 @@ fn main() {
         let door_node = SceneNode::from_vao(door_geometry);
         body_node.add_child(&door_node);
 
-
-            
-
         terrain_node.add_child(&helicopter_node);
 
         let mut camera = CameraBuilder::init()
@@ -162,9 +159,10 @@ fn main() {
         let mut pressed_keys = Vec::<VirtualKeyCode>::with_capacity(10);    
         let mut disable_turn = false;
 
-        let two_pi = 2.0 * 3.14159265359;
+        let pi =  3.14159265359;
+        let two_pi = 2.0 * pi;
         
-        helicopter_node.position.y += 10.0;
+        // helicopter_node.position.y += 10.0;
         // The main rendering loop
         loop {
             let now = std::time::Instant::now();
