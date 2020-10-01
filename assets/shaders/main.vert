@@ -11,7 +11,7 @@ out vec4 vert_color;
 
 void main()
 {
-    vert_normal = normal;
+    vert_normal = normalize(mat3(instance_transform) * normal);
     vert_color = color;
     gl_Position = camera * instance_transform * vec4(position, 1.0);
 }
