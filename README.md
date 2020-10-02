@@ -1,5 +1,7 @@
 # Gloom-rs
 
+![preview](instanced_helicopter_extra.png)
+
 This is a fork of [gloom-rs](https://github.com/mgimle/gloom-rs) for a graphics course at NTNU (TDT4195)
 
 ## Report for submission
