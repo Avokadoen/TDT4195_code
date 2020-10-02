@@ -9,6 +9,7 @@ This is a fork of [gloom-rs](https://github.com/mgimle/gloom-rs) for a graphics 
 My reports can be found in latex form 
 * [Assignment 1](https://www.overleaf.com/read/vfctcktgxysj)
 * [Assignment 2](https://www.overleaf.com/read/vnzyrbgmmmmt)
+* [Assignment 3](https://www.overleaf.com/read/sxyrfmxpqznq)
 
 ## Sources
 
