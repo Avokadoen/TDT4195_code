@@ -165,7 +165,7 @@ impl GeometricObject {
                 gl::ARRAY_BUFFER, 
                 helpers::byte_size_of_array(&instance_transforms),
                 helpers::array_to_c_void(&instance_transforms),
-                gl::STATIC_DRAW
+                gl::DYNAMIC_DRAW
             );
             
             let mat_size = std::mem::size_of::<glm::Mat4>() as i32;

@@ -127,8 +127,8 @@ fn main() {
         let mut helicopter_nodes = Vec::<HelicopterNode>::new();
         for i in 0..11 {
             for j in 0..11 {
-                let x_offset = -((instance_count as f32 * 0.5) * i as f32 * 0.5)  + (i * 10) as f32;
-                let z_offset = -((instance_count as f32 * 0.5) * j as f32 * 0.5)  + (j * 10) as f32;
+                let x_offset = i as f32 * 10.0  + (i * 10) as f32;
+                let z_offset = j as f32 * 10.0 + (j * 10) as f32;
                 let pos_offset = glm::vec3(x_offset, 40.0, z_offset);
                 let h = my_helicopter.create_helicopter_node(0.0, pos_offset).expect("something went wrong when creating helicopter node");
                 terrain_node.add_child(&h.root_node);
